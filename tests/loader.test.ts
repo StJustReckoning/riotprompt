@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSection, Section } from '../src/minorPrompt';
+import { createSection, Section } from '../src/riotprompt';
 import path from 'path';
 import { DEFAULT_LOGGER } from '../src/logger';
 

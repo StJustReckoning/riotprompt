@@ -4,7 +4,7 @@ import { DEFAULT_IGNORE_PATTERNS } from "./constants";
 import { ParametersSchema } from "./items/parameters";
 import { SectionOptions, SectionOptionsSchema } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
-import { Section, Weighted, createSection } from "./minorPrompt";
+import { Section, Weighted, createSection } from "./riotprompt";
 import * as Storage from "./util/storage";
 
 const OptionsSchema = z.object({

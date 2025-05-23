@@ -7,7 +7,7 @@ import { Section } from "../src/items/section";
 import { Weighted } from "../src/items/weighted";
 import { create as createPrompt } from "../src/prompt";
 // Import the constructor for Prompt
-import { createSection } from "../src/minorPrompt";
+import { createSection } from "../src/riotprompt";
 import { describe, expect, it } from 'vitest';
 
 // Let's create simple mock functions instead of using vi.fn()

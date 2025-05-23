@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSection, Section } from '../src/minorPrompt';
+import { createSection, Section } from '../src/riotprompt';
 import path from 'path';
 import { DEFAULT_LOGGER } from '../src/logger';
 
@@ -28,7 +28,7 @@ const mockOverride = vi.fn();
 const mockLoader = vi.fn();
 const mockCreatePrompt = vi.fn();
 
-vi.mock('../src/minorPrompt', () => {
+vi.mock('../src/riotprompt', () => {
     return {
         createSection: mockCreateSection,
         Parser: {
@@ -44,7 +44,7 @@ vi.mock('../src/minorPrompt', () => {
     };
 });
 
-let minorPromptModule;
+let riotpromptModule;
 
 // We'll import these dynamically in the beforeEach
 let loaderModule: {
@@ -67,7 +67,7 @@ describe('Loader', () => {
         // Dynamically import the modules after mocking
         Storage = await import('../src/util/storage');
         loaderModule = await import('../src/loader');
-        minorPromptModule = await import('../src/minorPrompt');
+        riotpromptModule = await import('../src/riotprompt');
     });
 
     // Tests for parameters handling

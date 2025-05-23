@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ParametersSchema } from "./items/parameters";
 import { SectionOptions, SectionOptionsSchema } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
-import { Content, Context, createPrompt, createSection, Instruction, Loader, Override, Parser, Prompt, Section, Weighted } from "./minorPrompt";
+import { Content, Context, createPrompt, createSection, Instruction, Loader, Override, Parser, Prompt, Section, Weighted } from "./riotprompt";
 
 const OptionSchema = z.object({
     logger: z.any().optional().default(DEFAULT_LOGGER),

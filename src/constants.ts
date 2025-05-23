@@ -3,7 +3,7 @@ import { SectionSeparator } from "formatter";
 import { FormatOptions } from "formatter";
 
 export const DEFAULT_CHARACTER_ENCODING = "utf8";
-export const LIBRARY_NAME = "minorprompt";
+export const LIBRARY_NAME = "riotprompt";
 
 export const DEFAULT_PERSONA_ROLE = "developer";
 

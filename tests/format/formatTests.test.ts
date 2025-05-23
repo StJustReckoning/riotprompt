@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import { convertToSection } from '../../src/items/section';
-import { FormatOptions, Formatter } from '../../src/minorPrompt';
+import { FormatOptions, Formatter } from '../../src/riotprompt';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';

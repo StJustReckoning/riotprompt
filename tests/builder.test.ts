@@ -96,8 +96,8 @@ const mockCreatePrompt = vi.fn().mockReturnValue({
 
 const mockStringifyJSON = vi.fn(obj => JSON.stringify(obj)); // Define a stable mock function here
 
-// Mock minorPrompt imports but don't mock the builder module itself
-vi.mock('../src/minorPrompt', () => {
+// Mock riotprompt imports but don't mock the builder module itself
+vi.mock('../src/riotprompt', () => {
     return {
         createSection: mockCreateSection,
         Parser: {
@@ -121,14 +121,14 @@ vi.mock('../src/util/general', () => {
 });
 
 let loggerModule;
-let minorPromptModule;
+let riotpromptModule;
 let builder;
 
 describe('Builder', () => {
     beforeEach(async () => {
         // Import modules after mocking
         loggerModule = await import('../src/logger');
-        minorPromptModule = await import('../src/minorPrompt');
+        riotpromptModule = await import('../src/riotprompt');
 
         // Import the actual builder module, not a mock
         builder = await import('../src/builder');
@@ -161,7 +161,7 @@ describe('Builder', () => {
         builder.create(options);
 
         const { wrapLogger } = loggerModule;
-        const { Parser, Override, Loader } = minorPromptModule;
+        const { Parser, Override, Loader } = riotpromptModule;
 
         expect(wrapLogger).toHaveBeenCalledWith(options.logger, 'Builder');
         expect(Parser.create).toHaveBeenCalledWith({
@@ -372,7 +372,7 @@ describe('Builder', () => {
         const instance = builder.create({ basePath: './prompts' });
 
         // Check if default options are used
-        const { Override } = minorPromptModule;
+        const { Override } = riotpromptModule;
 
         expect(Override.create).toHaveBeenCalledWith(expect.objectContaining({
             overrides: false,

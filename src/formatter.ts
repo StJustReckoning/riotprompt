@@ -1,4 +1,4 @@
-import { Instruction } from "minorPrompt";
+import { Instruction } from "riotprompt";
 import { z } from "zod";
 import * as Chat from "./chat";
 import { getPersonaRole, Message, Model } from "./chat";

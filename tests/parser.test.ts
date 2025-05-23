@@ -433,7 +433,7 @@ describe('parser', () => {
             // Mock parse implementation to simulate unsupported content error
             const originalParse = parser.parse;
             parser.parse = vi.fn().mockImplementation(() => {
-                throw new Error('Unsupported content supplied to parse, minorprompt currently only supports markdown and text');
+                throw new Error('Unsupported content supplied to parse, riotprompt currently only supports markdown and text');
             });
 
             try {
