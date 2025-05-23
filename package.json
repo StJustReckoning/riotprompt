@@ -1,5 +1,5 @@
 {
-    "name": "riotprompt",
+    "name": "@riotprompt/riotprompt",
     "version": "0.0.1",
     "description": "Get it together, and organize your prompts.",
     "type": "module",
