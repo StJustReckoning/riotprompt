@@ -84,7 +84,7 @@ export const create = (parserOptions?: OptionsParam): Instance => {
         } else if (isText(content)) {
             mainSection = parseText<T>(content, currentOptions);
         } else {
-            throw new Error(`Unsupported content supplied to parse, minorprompt currently only supports markdown and text`);
+            throw new Error(`Unsupported content supplied to parse, riotprompt currently only supports markdown and text`);
         }
         return mainSection;
     }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ParametersSchema } from './items/parameters';
 import { SectionOptions, SectionOptionsSchema } from './items/section';
 import { DEFAULT_LOGGER, wrapLogger } from './logger';
-import { Formatter, Parser, Section, Weighted } from './minorPrompt';
+import { Formatter, Parser, Section, Weighted } from './riotprompt';
 import * as Storage from './util/storage';
 
 const OptionsSchema = z.object({

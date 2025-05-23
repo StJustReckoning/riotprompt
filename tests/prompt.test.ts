@@ -1,5 +1,5 @@
 import { describe, expect, vi, test, beforeEach } from 'vitest';
-import { createPrompt, createSection } from '../src/minorPrompt';
+import { createPrompt, createSection } from '../src/riotprompt';
 import type { Weighted } from '../src/items/weighted';
 
 // Mock all dependencies

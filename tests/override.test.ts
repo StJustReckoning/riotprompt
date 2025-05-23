@@ -47,7 +47,7 @@ vi.mock('../src/util/storage', () => ({
     create: vi.fn(() => mockStorageInstance)
 }));
 
-vi.mock('../src/minorPrompt', () => ({
+vi.mock('../src/riotprompt', () => ({
     Parser: {
         create: vi.fn(() => ({
             parseFile: vi.fn(async () => mockSection)
@@ -128,15 +128,15 @@ vi.mock('zod', () => {
 interface ImportedModules {
     create: (options: Options) => Instance;
     Storage: any;
-    minorprompt: any;
+    riotprompt: any;
 }
 
 const importModules = async (): Promise<ImportedModules> => {
     const { create } = await import('../src/override');
     const Storage = await import('../src/util/storage');
-    const minorprompt = await import('../src/minorPrompt');
+    const riotprompt = await import('../src/riotprompt');
 
-    return { create, Storage, minorprompt };
+    return { create, Storage, riotprompt };
 };
 
 describe('override.ts', () => {
