@@ -24,7 +24,7 @@
         "test": "pnpm run test:coverage && pnpm run test:readme",
         "test:coverage": "vitest run --coverage",
         "test:debug": "vitest --run --coverage --reporter verbose",
-        "test:readme": "markdown-doctest -c .markdown-doctest-setup.mjs README.md",
+        "test:readme": "doccident -c .markdown-doctest-setup.mjs README.md",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "clean": "rm -rf dist",
