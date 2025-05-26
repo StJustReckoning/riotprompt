@@ -58,7 +58,7 @@
         "eslint": "^9.27.0",
         "eslint-plugin-import": "^2.31.0",
         "globals": "^16.1.0",
-        "minimatch": "^3.1.2",
+        "minimatch": "^10.0.1",
         "rollup-plugin-preserve-shebang": "^1.0.1",
         "typescript": "^5.8.3",
         "vite": "^6.3.5",
