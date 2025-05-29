@@ -17,8 +17,10 @@ export const DEFAULT_LOGGER: Logger = {
     info: (message: string, ...args: any[]) => console.info(message, ...args),
     warn: (message: string, ...args: any[]) => console.warn(message, ...args),
     error: (message: string, ...args: any[]) => console.error(message, ...args),
-    verbose: (message: string, ...args: any[]) => console.log(message, ...args),
-    silly: (message: string, ...args: any[]) => console.log(message, ...args),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    verbose: (message: string, ...args: any[]) => { },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    silly: (message: string, ...args: any[]) => { },
 }
 
 export const wrapLogger = (toWrap: Logger, name?: string): Logger => {

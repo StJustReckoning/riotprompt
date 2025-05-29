@@ -96,8 +96,8 @@ export default defineConfig({
                 },
                 {
                     format: 'cjs',
-                    entryFileNames: '[name].cjs',
-                    preserveModules: true,
+                    entryFileNames: 'riotprompt.cjs',
+                    preserveModules: false,
                     exports: 'named',
                 }
             ],
