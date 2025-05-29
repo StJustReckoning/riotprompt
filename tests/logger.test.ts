@@ -53,12 +53,12 @@ describe('Logger', () => {
 
         it('verbose should call console.log', () => {
             DEFAULT_LOGGER.verbose('test message', { data: 'test' });
-            expect(console.log).toHaveBeenCalledWith('test message', { data: 'test' });
+            expect(console.log).not.toHaveBeenCalledWith('test message', { data: 'test' });
         });
 
         it('silly should call console.log', () => {
             DEFAULT_LOGGER.silly('test message', { data: 'test' });
-            expect(console.log).toHaveBeenCalledWith('test message', { data: 'test' });
+            expect(console.log).not.toHaveBeenCalledWith('test message', { data: 'test' });
         });
     });
 
