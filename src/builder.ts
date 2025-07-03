@@ -8,7 +8,7 @@ import { Content, Context, createPrompt, createSection, Instruction, Loader, Ove
 const OptionSchema = z.object({
     logger: z.any().optional().default(DEFAULT_LOGGER),
     basePath: z.string(),
-    overridePath: z.string().optional().default("./"),
+    overridePaths: z.array(z.string()).optional().default(["./"]),
     overrides: z.boolean().optional().default(false),
     parameters: ParametersSchema.optional().default({}),
 });
@@ -35,7 +35,7 @@ export const create = (builderOptions: OptionsParam): Instance => {
     const logger = wrapLogger(options.logger, 'Builder');
     const parser = Parser.create({ logger });
     const override = Override.create({
-        logger, configDir: options.overridePath || "./",
+        logger, configDirs: options.overridePaths || ["./"],
         overrides: options.overrides || false
     });
     const loader = Loader.create({ logger });

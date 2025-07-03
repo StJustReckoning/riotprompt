@@ -25,3 +25,10 @@ tsconfig.json
 .env
 .env.*
 README.md
+docs/
+.markdown-doctest-setup.mjs
+.nvmrc
+eslint.config.mjs
+nodemon.json
+vite.config.ts
+vitest.config.ts

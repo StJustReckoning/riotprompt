@@ -154,7 +154,7 @@ describe('Builder', () => {
         const options = {
             logger: { custom: true, debug: vi.fn() },
             basePath: './custom-path',
-            overridePath: './overrides',
+            overridePaths: ['./overrides'],
             overrides: true,
         };
 
@@ -169,7 +169,7 @@ describe('Builder', () => {
         });
         expect(Override.create).toHaveBeenCalledWith({
             logger: expect.any(Object),
-            configDir: options.overridePath,
+            configDirs: ['./overrides'],
             overrides: options.overrides
         });
         expect(Loader.create).toHaveBeenCalledWith({
@@ -376,7 +376,7 @@ describe('Builder', () => {
 
         expect(Override.create).toHaveBeenCalledWith(expect.objectContaining({
             overrides: false,
-            configDir: './'
+            configDirs: ['./']
         }));
     });
 
