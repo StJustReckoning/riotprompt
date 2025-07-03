@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import type { Logger } from '../src/logger';
@@ -6,20 +6,20 @@ import type { Options, Instance } from '../src/override';
 
 // Define types for mocks
 interface MockStorage {
-    exists: vi.Mock;
+    exists: Mock;
 }
 
 // Create a typed mock object for Section
 type MockSection = {
     // @ts-ignore
-    prepend: vi.Mock<any, any>;
+    prepend: Mock<any, any>;
     // @ts-ignore
-    append: vi.Mock<any, any>;
+    append: Mock<any, any>;
     items: any[];
-    add: vi.Mock;
-    insert: vi.Mock;
-    replace: vi.Mock;
-    remove: vi.Mock;
+    add: Mock;
+    insert: Mock;
+    replace: Mock;
+    remove: Mock;
 };
 
 const mockSection: MockSection = {
@@ -34,6 +34,7 @@ const mockSection: MockSection = {
 
 let mockStorageInstance: MockStorage;
 const mockLogger: Logger = {
+    name: 'test-logger',
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
@@ -157,7 +158,7 @@ describe('override.ts', () => {
 
         // Create instance with default options
         instance = modules.create({
-            configDir: '/test/config',
+            configDirs: ['/test/config'],
             overrides: false,
             logger: mockLogger,
             parameters: {}
@@ -171,7 +172,7 @@ describe('override.ts', () => {
 
             const result = await instance.override('test.md', mockSection as any);
 
-            expect(result).toEqual({});
+            expect(result).toEqual({ prepends: [], appends: [] });
             expect(mockStorageInstance.exists).toHaveBeenCalledTimes(3);
             expect(mockStorageInstance.exists).toHaveBeenCalledWith('/test/config/test.md');
             expect(mockStorageInstance.exists).toHaveBeenCalledWith('/test/config/test-pre.md');
@@ -185,8 +186,10 @@ describe('override.ts', () => {
 
             const result = await instance.override('test.md', mockSection as any);
 
-            expect(result).toHaveProperty('prepend', mockSection);
-            expect(result).not.toHaveProperty('append');
+            expect(result).toHaveProperty('prepends');
+            expect(result.prepends).toHaveLength(1);
+            expect(result.prepends[0]).toBe(mockSection);
+            expect(result.appends).toHaveLength(0);
             expect(result).not.toHaveProperty('override');
         });
 
@@ -197,8 +200,10 @@ describe('override.ts', () => {
 
             const result = await instance.override('test.md', mockSection as any);
 
-            expect(result).toHaveProperty('append', mockSection);
-            expect(result).not.toHaveProperty('prepend');
+            expect(result).toHaveProperty('appends');
+            expect(result.appends).toHaveLength(1);
+            expect(result.appends[0]).toBe(mockSection);
+            expect(result.prepends).toHaveLength(0);
             expect(result).not.toHaveProperty('override');
         });
 
@@ -219,7 +224,7 @@ describe('override.ts', () => {
             // Create new instance with overrides enabled
             const { create } = await import('../src/override');
             instance = create({
-                configDir: '/test/config',
+                configDirs: ['/test/config'],
                 overrides: true,
                 logger: mockLogger
             });
@@ -237,15 +242,19 @@ describe('override.ts', () => {
             // Create new instance with overrides enabled
             const { create } = await import('../src/override');
             instance = create({
-                configDir: '/test/config',
+                configDirs: ['/test/config'],
                 overrides: true,
                 logger: mockLogger
             });
 
             const result = await instance.override('test.md', mockSection as any);
 
-            expect(result).toHaveProperty('prepend', mockSection);
-            expect(result).toHaveProperty('append', mockSection);
+            expect(result).toHaveProperty('prepends');
+            expect(result.prepends).toHaveLength(1);
+            expect(result.prepends[0]).toBe(mockSection);
+            expect(result).toHaveProperty('appends');
+            expect(result.appends).toHaveLength(1);
+            expect(result.appends[0]).toBe(mockSection);
             expect(result).toHaveProperty('override', mockSection);
         });
     });
@@ -277,7 +286,7 @@ describe('override.ts', () => {
             // Create new instance with overrides enabled
             const { create } = await import('../src/override');
             instance = create({
-                configDir: '/test/config',
+                configDirs: ['/test/config'],
                 overrides: true,
                 logger: mockLogger
             });
@@ -295,7 +304,7 @@ describe('override.ts', () => {
             // Create new instance with overrides enabled
             const { create } = await import('../src/override');
             instance = create({
-                configDir: '/test/config',
+                configDirs: ['/test/config'],
                 overrides: true,
                 logger: mockLogger
             });

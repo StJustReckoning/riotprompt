@@ -8,7 +8,7 @@ import * as Storage from './util/storage';
 
 const OptionsSchema = z.object({
     logger: z.any().optional().default(DEFAULT_LOGGER),
-    configDir: z.string().default('./overrides'),
+    configDirs: z.array(z.string()).default(['./overrides']),
     overrides: z.boolean().default(false),
     parameters: ParametersSchema.optional().default({}),
 });
@@ -20,7 +20,7 @@ export type OptionsParam = Partial<Options>;
 export interface Instance {
     customize: <T extends Weighted>(overrideFile: string, section: Section<T>, sectionOptions?: SectionOptions) => Promise<Section<T>>;
     override: <T extends Weighted>(overrideFile: string, section: Section<T>, sectionOptions?: SectionOptions) =>
-        Promise<{ override?: Section<T>, prepend?: Section<T>, append?: Section<T> }>;
+        Promise<{ override?: Section<T>, prepends: Section<T>[], appends: Section<T>[] }>;
 }
 
 export const create = (overrideOptions: OptionsParam = {}): Instance => {
@@ -46,36 +46,48 @@ export const create = (overrideOptions: OptionsParam = {}): Instance => {
         overrideFile: string,
         section: Section<T>,
         sectionOptions: Partial<SectionOptions> = {}
-    ): Promise<{ override?: Section<T>, prepend?: Section<T>, append?: Section<T> }> => {
+    ): Promise<{ override?: Section<T>, prepends: Section<T>[], appends: Section<T>[] }> => {
         const currentSectionOptions = loadOptions(sectionOptions);
 
-        const baseFile = path.join(options.configDir, overrideFile);
-        const preFile = baseFile.replace('.md', '-pre.md');
-        const postFile = baseFile.replace('.md', '-post.md');
+        const response: { override?: Section<T>, prepends: Section<T>[], appends: Section<T>[] } = {
+            prepends: [],
+            appends: []
+        };
 
-        const response: { override?: Section<T>, prepend?: Section<T>, append?: Section<T> } = {};
+        // Process directories in order (closest to furthest)
+        for (let i = 0; i < options.configDirs.length; i++) {
+            const configDir = options.configDirs[i];
+            const baseFile = path.join(configDir, overrideFile);
+            const preFile = baseFile.replace('.md', '-pre.md');
+            const postFile = baseFile.replace('.md', '-post.md');
 
-        if (await storage.exists(preFile)) {
-            logger.silly('Found pre file %s', preFile);
-            const parser = Parser.create({ logger });
-            response.prepend = await parser.parseFile<T>(preFile, currentSectionOptions);
-        }
-
-        if (await storage.exists(postFile)) {
-            logger.silly('Found post file %s', postFile);
-            const parser = Parser.create({ logger });
-            response.append = await parser.parseFile<T>(postFile, currentSectionOptions);
-        }
-
-        if (await storage.exists(baseFile)) {
-            logger.silly('Found base file %s', baseFile);
-            if (options.overrides) {
-                logger.warn('WARNING: Core directives are being overwritten by custom configuration');
+            // Check for prepend files (-pre.md)
+            if (await storage.exists(preFile)) {
+                logger.silly('Found pre file %s (layer %d)', preFile, i + 1);
                 const parser = Parser.create({ logger });
-                response.override = await parser.parseFile<T>(baseFile, currentSectionOptions);
-            } else {
-                logger.error('ERROR: Core directives are being overwritten by custom configuration');
-                throw new Error('Core directives are being overwritten by custom configuration, but overrides are not enabled.  Please enable --overrides to use this feature.');
+                const prependSection = await parser.parseFile<T>(preFile, currentSectionOptions);
+                response.prepends.push(prependSection);
+            }
+
+            // Check for append files (-post.md)
+            if (await storage.exists(postFile)) {
+                logger.silly('Found post file %s (layer %d)', postFile, i + 1);
+                const parser = Parser.create({ logger });
+                const appendSection = await parser.parseFile<T>(postFile, currentSectionOptions);
+                response.appends.push(appendSection);
+            }
+
+            // Check for complete override files - use the first (closest) one found
+            if (!response.override && await storage.exists(baseFile)) {
+                logger.silly('Found base file %s (layer %d)', baseFile, i + 1);
+                if (options.overrides) {
+                    logger.warn('WARNING: Core directives are being overwritten by custom configuration at layer %d', i + 1);
+                    const parser = Parser.create({ logger });
+                    response.override = await parser.parseFile<T>(baseFile, currentSectionOptions);
+                } else {
+                    logger.error('ERROR: Core directives are being overwritten by custom configuration');
+                    throw new Error('Core directives are being overwritten by custom configuration, but overrides are not enabled.  Please enable --overrides to use this feature.');
+                }
             }
         }
 
@@ -89,7 +101,7 @@ export const create = (overrideOptions: OptionsParam = {}): Instance => {
     ): Promise<Section<T>> => {
         const currentSectionOptions = loadOptions(sectionOptions);
 
-        const { overrideContent, prepend, append }: { overrideContent?: Section<T>, prepend?: Section<T>, append?: Section<T> } = await override(overrideFile, section, currentSectionOptions);
+        const { override: overrideContent, prepends, appends }: { override?: Section<T>, prepends: Section<T>[], appends: Section<T>[] } = await override(overrideFile, section, currentSectionOptions);
         let finalSection: Section<T> = section;
 
         if (overrideContent) {
@@ -102,12 +114,14 @@ export const create = (overrideOptions: OptionsParam = {}): Instance => {
             }
         }
 
-        if (prepend) {
+        // Apply prepends in order (closest layer first)
+        for (const prepend of prepends) {
             logger.silly('Prepend found, adding to content from file %s', prepend);
             finalSection = finalSection.prepend(prepend);
         }
 
-        if (append) {
+        // Apply appends in reverse order (furthest layers first, then closest)
+        for (const append of appends.reverse()) {
             logger.silly('Append found, adding to content from file %s', append);
             finalSection = finalSection.append(append);
         }

@@ -64,6 +64,7 @@ describe('Logger', () => {
 
     describe('wrapLogger', () => {
         const mockLogger: Logger = {
+            name: 'mock',
             debug: vi.fn(),
             info: vi.fn(),
             warn: vi.fn(),
@@ -112,6 +113,7 @@ describe('Logger', () => {
 
     describe('wrapLogger with name', () => {
         const mockLogger: Logger = {
+            name: 'mock',
             debug: vi.fn(),
             info: vi.fn(),
             warn: vi.fn(),
