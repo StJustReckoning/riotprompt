@@ -15,6 +15,10 @@ export * as Loader from "./loader";
 export * as Override from "./override";
 export * as Builder from "./builder";
 
+// ===== NEW RECIPES SYSTEM =====
+export * as Recipes from "./recipes";
+export { cook, commit, release, documentation, review, quick, recipe, configureTemplates, getTemplates } from "./recipes";
+
 // Export types
 export type { Content } from "./items/content";
 export type { Context } from "./items/context";
@@ -27,3 +31,4 @@ export type { Prompt } from "./prompt";
 export type { FormatOptions, SectionSeparator, SectionTitleProperty } from "./formatter";
 export type { Model, Request } from "./chat";
 export type { Logger } from "./logger";
+export type { RecipeConfig, ContentItem, TemplateConfig } from "./recipes";
