@@ -28,5 +28,5 @@ jobs:
       - run: pnpm run test
       - uses: codecov/codecov-action@v5
         with:
-          slug: riotprompt
+          slug: StJustReckoning/riotprompt
           token: ${{ secrets.CODECOV_TOKEN }}

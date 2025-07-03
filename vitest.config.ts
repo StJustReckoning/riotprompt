@@ -13,7 +13,18 @@ export default defineConfig({
                 functions: 80,
                 branches: 80,
                 statements: 80
-            }
+            },
+            exclude: [
+                'node_modules/',
+                'src/test/',
+                'docs/**',
+                'dist/**',
+                'vitest.config.ts',
+                'vite.config.ts',
+                'demo-recipes.ts',
+                'eslint.config.mjs',
+                '.markdown-doctest-setup.mjs',
+            ]
         }
     },
     resolve: {

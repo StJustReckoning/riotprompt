@@ -12,6 +12,59 @@ In essence, overrides let you **selectively replace or augment prompt sections**
 
 All of this is done without modifying the original prompt source file; instead, riotprompt will detect override files and merge or replace content accordingly when building the final prompt.
 
+## Multi-Layered Override System
+
+riotprompt supports **multi-layered overrides**, allowing you to define multiple levels of customization that build upon each other. This is particularly powerful when you need to support:
+
+1. **Project-level customizations** (e.g., `./project/overrides`)
+2. **User-level customizations** (e.g., `~/customization`)
+3. **Environment-specific customizations** (e.g., `./config/prod`)
+
+### Override Priority and Layering
+
+When multiple override paths are provided, riotprompt processes them with a **closest-to-furthest** priority system:
+
+- **Array order determines priority**: The first path in the `overridePaths` array has the highest priority (closest layer)
+- **Complete overrides**: Only the **closest** override file replaces the original content
+- **Prepend content**: Applied in **closest-first** order (closest layer appears first in the final content)
+- **Append content**: Applied in **furthest-first** order (furthest layers appear first, closest layer appears last)
+
+### Example Layering Scenario
+
+Consider this configuration:
+
+```ts
+const builder = Builder.create({
+  basePath: './prompts',
+  overridePaths: ['./project', '~/customization'], // closest to furthest
+  overrides: true
+});
+```
+
+With these override files:
+
+- `./project/personas/you-pre.md` (Level 1 - closest)
+- `~/customization/personas/you-pre.md` (Level 2 - further)
+- `./project/personas/you-post.md` (Level 1 - closest) 
+- `~/customization/personas/you-post.md` (Level 2 - further)
+
+**For prepend content (you-pre.md files):**
+```
+* Level 1 - Pre Content (from ./project)
+* Level 2 - Pre Content (from ~/customization)  
+* You Persona Content - Core
+```
+
+**For append content (you-post.md files):**
+```
+* You Persona Content - Core
+* Level 2 - Post Content (from ~/customization)
+* Level 1 - Post Content (from ./project)
+```
+
+**For complete overrides:**
+If both `./project/personas/you.md` and `~/customization/personas/you.md` exist, only the closest override (`./project/personas/you.md`) will be used, completely replacing the original content.
+
 ## How Overrides Work
 
 riotprompt's override system works by looking for specially-named files in an "override" directory that correspond to your prompt files. When you build a prompt (for example, using the Builder), you can specify an `overridePath` where your override files live and enable overrides.
@@ -52,18 +105,23 @@ When implementing overrides in a real-world application, the paths are often con
   const basePath = path.join(__dirname, '../prompts');
   ```
 
-* **overridePath** is typically configured using a project's configuration directory, which might be in the user's workspace or a designated config location:
+* **overridePaths** is typically configured using multiple directories for different levels of customization, which might include project-specific directories, user workspace directories, or environment-specific config locations:
 
   ```ts
-  const overridePath = path.join(process.cwd(), 'config/prompts');
+  const overridePaths = [
+    path.join(process.cwd(), 'config/prompts'),      // Project-level (closest)
+    path.join(os.homedir(), '.app/prompt-overrides'), // User-level (further)
+    '/etc/app/global-overrides'                      // System-level (furthest)
+  ];
   ```
 
-This setup creates a powerful pattern where library authors can ship applications with a set of default prompts (in the package's prompts directory), while allowing users to customize those prompts by:
+This setup creates a powerful pattern where library authors can ship applications with a set of default prompts (in the package's prompts directory), while allowing multiple layers of customization:
 
-1. **Completely replacing** prompt content by providing override files with the same name
+1. **Completely replacing** prompt content by providing override files with the same name in any layer
 2. **Extending** the default prompts by adding content before or after using the `-pre.md` and `-post.md` conventions
+3. **Layering customizations** where project-specific overrides take precedence over user-specific overrides, which take precedence over system-wide overrides
 
-This approach maintains a clean separation between the library's default content and user customizations, making it easier to update the library without losing custom modifications. It's particularly valuable in frameworks and tools that rely heavily on prompt engineering but need to support user-specific adaptations.
+This approach maintains a clean separation between the library's default content, project customizations, user customizations, and system-wide modifications, making it easier to update the library without losing custom modifications at any level. It's particularly valuable in frameworks and tools that need to support team collaboration while still allowing individual developer preferences.
 
 **Directory Structure:**
 
@@ -91,21 +149,21 @@ In this scenario:
 
 ## Enabling Overrides in Builder
 
-If you are using the `Builder` to assemble prompts, you need to tell it to use the overrides. This is done via the `overridePath` and `overrides` options in `Builder.create()`:
+If you are using the `Builder` to assemble prompts, you need to tell it to use the overrides. This is done via the `overridePaths` and `overrides` options in `Builder.create()`:
 
 ```ts
 const builder = Builder.create({
   basePath: './prompts',
-  overridePath: './overrides',
+  overridePaths: ['./overrides', '~/personal-overrides'], // Array of override directories
   overrides: true
 });
 ```
 
 * `basePath` is where your base prompt files are located.
-* `overridePath` is where your override files are located.
+* `overridePaths` is an array of directories where your override files are located, ordered from closest (highest priority) to furthest (lowest priority).
 * `overrides: true` enables the override functionality. (By default, riotprompt might ignore override files unless this flag is set. This is a safety feature to prevent accidental override of content.)
 
-When `overrides` is true, the builder will incorporate any found override files as it loads prompt files. If you set an override path but `overrides` is false (or omitted), riotprompt will likely skip applying full overrides. (Prepend/append might still be applied, or they might also be ignored – typically you enable the flag when you intend to use any overrides.)
+When `overrides` is true, the builder will incorporate any found override files as it loads prompt files. If you set override paths but `overrides` is false (or omitted), riotprompt will likely skip applying full overrides. (Prepend/append might still be applied, or they might also be ignored – typically you enable the flag when you intend to use any overrides.)
 
 In applications like **Cortalyne**, a command-line flag is used (e.g. `--overrides`) to toggle this behavior. This maps to the `overrides: true` setting in the riotprompt builder.
 
@@ -123,9 +181,9 @@ const baseSection = createSection("Instructions");
 baseSection.add("Follow the company style guide.");
 baseSection.add("Keep the email concise.");
 
-// Create an Override instance
+// Create an Override instance with multiple config directories
 const override = Override.create({
-  configDir: './overrides',
+  configDirs: ['./project-overrides', './user-overrides'], // Array of directories
   overrides: true
 });
 
@@ -133,13 +191,16 @@ const override = Override.create({
 await override.customize('instructions/email.md', baseSection);
 
 // Now baseSection might have content prepended, appended, or completely replaced
-// depending on what override files exist in the './overrides' directory:
-// - ./overrides/instructions/email.md (full override)
-// - ./overrides/instructions/email-pre.md (prepend)
-// - ./overrides/instructions/email-post.md (append)
+// depending on what override files exist in the configured directories:
+// - ./project-overrides/instructions/email.md (closest - full override)
+// - ./user-overrides/instructions/email.md (furthest - full override, used only if closest doesn't exist)
+// - ./project-overrides/instructions/email-pre.md (closest - prepend, applied first)
+// - ./user-overrides/instructions/email-pre.md (furthest - prepend, applied second)
+// - ./project-overrides/instructions/email-post.md (closest - append, applied last)
+// - ./user-overrides/instructions/email-post.md (furthest - append, applied first after core content)
 
 console.log(baseSection.items[0].text);
-// Output depends on what override files exist
+// Output depends on what override files exist and their layering
 ```
 
 In this example, `override.customize` takes a file path string ('instructions/email.md'), a section object (baseSection), and optionally section options. Under the hood, this is what Builder would do when it finds override files.

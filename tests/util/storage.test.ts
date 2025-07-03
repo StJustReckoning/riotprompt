@@ -1,24 +1,6 @@
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
 // Mock the fs module
-var fs: {
-    promises: {
-        stat: vi.Mock<() => Promise<any>>,
-        access: vi.Mock<() => Promise<void>>,
-        mkdir: vi.Mock<() => Promise<void>>,
-        readFile: vi.Mock<() => Promise<string>>,
-        writeFile: vi.Mock<() => Promise<void>>,
-        lstatSync: vi.Mock<() => Promise<any>>,
-        readdir: vi.Mock<() => Promise<string[]>>,
-    },
-    constants: {
-        R_OK: number,
-        W_OK: number
-    },
-    createReadStream: vi.Mock<() => any>,
-};
-
-// Mock the fs module
 const mockGlob = vi.fn<() => Promise<any>>();
 const mockStat = vi.fn<() => Promise<any>>();
 const mockAccess = vi.fn<() => Promise<void>>();
