@@ -75,7 +75,7 @@ RiotPrompt is designed to be completely generic and unopinionated. Unlike other 
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details. Test.
 
 ## 📄 License
 
