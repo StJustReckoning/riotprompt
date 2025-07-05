@@ -173,10 +173,7 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
     }
 
     // Process content
-    // eslint-disable-next-line no-console
     for (const item of finalConfig.content || []) {
-        // eslint-disable-next-line no-console
-        console.log('Processing content item:', JSON.stringify(item, null, 2));
         await processContentItem(item, contentSection, 'content', {
             basePath: finalConfig.basePath,
             parser,
