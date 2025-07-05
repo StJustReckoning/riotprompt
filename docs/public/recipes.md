@@ -1,6 +1,6 @@
-# 🚀 RiotPrompt Recipes: Revolutionary Prompt Creation
+# 🚀 RiotPrompt Recipes: Generic Prompt Creation System
 
-The new **Recipes** system completely transforms how you create prompts with RiotPrompt. Say goodbye to verbose builder patterns and hello to efficient, declarative prompt creation!
+The **Recipes** system provides a powerful, declarative way to create prompts with RiotPrompt. Instead of verbose builder patterns, you can now create prompts using simple configuration objects.
 
 ## 📊 The Revolution: Before vs After
 
@@ -12,18 +12,18 @@ let builder: Builder.Instance = Builder.create({
   overrides: false,
 });
 
-builder = await builder.addPersonaPath('persona/developer.md');
-builder = await builder.addInstructionPath('instructions/commit.md');
+builder = await builder.addPersonaPath('persona/expert.md');
+builder = await builder.addInstructionPath('instructions/analyze.md');
 
-if (userDirection) {
-  builder = await builder.addContent(userDirection, { 
-    title: 'User Direction', 
+if (userInput) {
+  builder = await builder.addContent(userInput, { 
+    title: 'User Input', 
     weight: 1.0 
   });
 }
 
-builder = await builder.addContent(diffContent, { 
-  title: 'Diff', 
+builder = await builder.addContent(dataToProcess, { 
+  title: 'Data', 
   weight: 0.5 
 });
 
@@ -34,27 +34,19 @@ if (directories?.length) {
 return await builder.build();
 ```
 
-### ✅ New Recipes Approach (1-3 lines!)
+### ✅ New Recipes Approach (1-5 lines!)
 ```typescript
-// Quick Builder - 1 line!
-return quick.commit(diffContent, { basePath: __dirname, userDirection });
-
-// Template-based - 2 lines!
-return commit({
-  basePath: __dirname,
-  content: [
-    { content: userDirection, title: 'User Direction', weight: 1.0 },
-    { content: diffContent, title: 'Diff', weight: 0.5 },
-  ],
-});
-
-// Configuration-driven - Single object!
+// Simple configuration-driven approach
 return cook({
   basePath: __dirname,
-  template: 'commit',
+  persona: { path: 'persona/expert.md' },
+  instructions: [{ path: 'instructions/analyze.md' }],
   content: [
-    { content: userDirection, title: 'User Direction', weight: 1.0 },
-    { content: diffContent, title: 'Diff', weight: 0.5 },
+    { content: userInput, title: 'User Input', weight: 1.0 },
+    { content: dataToProcess, title: 'Data', weight: 0.5 },
+  ],
+  context: [
+    { directories: directories, weight: 0.5 },
   ],
 });
 ```
@@ -65,125 +57,108 @@ return cook({
 - **Zero Boilerplate**: No more manual builder chaining
 - **Declarative**: Describe what you want, not how to build it
 - **Type-Safe**: Full TypeScript support with intelligent IntelliSense
-- **Multiple APIs**: Choose the style that fits your preferences
+- **Template System**: Create reusable configurations for common patterns
 - **Smart Defaults**: Reasonable defaults reduce configuration
-- **Template-Based**: Reusable patterns for common use cases
+- **Completely Generic**: No hardcoded domain concepts
 
-## 🛠️ API Reference
+## 🛠️ Core API
 
-### Quick Builders
-The fastest way to create common prompt types:
-
-```typescript
-import { quick } from 'riotprompt';
-
-// Commit prompts with overrides
-const prompt = await quick.commit(diffContent, {
-  basePath: __dirname,
-  overridePaths: ['./project-overrides', '~/personal'],
-  overrides: true,
-  userDirection: "Focus on performance",
-  context: "This is a critical system",
-  directories: ["docs/", "specs/"]
-});
-
-// Release prompts with overrides
-const prompt = await quick.release(logContent, diffContent, {
-  basePath: __dirname,
-  overridePaths: ['./overrides'],
-  overrides: true,
-  releaseFocus: "Breaking changes",
-  context: "Major version bump"
-});
-```
-
-### Template Functions
-Pre-configured templates for common scenarios:
-
-```typescript
-import { commit, release, documentation, review } from 'riotprompt';
-
-const commitPrompt = await commit({
-  basePath: __dirname,
-  content: [
-    { content: diffContent, title: 'Changes', weight: 1.0 },
-    { content: context, title: 'Context', weight: 0.5 },
-  ],
-  context: [
-    { directories: ['docs/'], weight: 0.3 }
-  ]
-});
-```
-
-### Configuration-Driven
-Maximum flexibility with declarative configuration:
+### Basic Usage
 
 ```typescript
 import { cook } from 'riotprompt';
 
 const prompt = await cook({
   basePath: __dirname,
-  template: 'commit',  // or 'release', 'documentation', 'review'
-  persona: { path: 'persona/expert.md' },
+  persona: { content: 'You are a helpful AI assistant' },
   instructions: [
-    { path: 'instructions/analyze.md' },
-    { content: 'Focus on security', title: 'Security Focus' },
+    { content: 'Follow these guidelines...' },
+    { path: 'instructions/specific-task.md' },
   ],
   content: [
-    { content: codeToReview, title: 'Source Code', weight: 1.0 },
-    { path: 'examples/good-patterns.ts', weight: 0.5 },
+    { content: sourceData, title: 'Source Data', weight: 1.0 },
+    { path: 'examples/sample.md', weight: 0.5 },
   ],
   context: [
     { directories: ['docs/', 'specs/'], weight: 0.3 },
-    { content: 'Production system', title: 'Environment', weight: 0.7 },
+    { content: 'Additional context', title: 'Context', weight: 0.7 },
+  ],
+});
+```
+
+### Template System
+
+Create reusable templates for common patterns:
+
+```typescript
+import { registerTemplates, cook } from 'riotprompt';
+
+// Register your templates
+registerTemplates({
+  'codeReview': {
+    persona: { path: 'personas/code-reviewer.md' },
+    instructions: [{ path: 'instructions/review-guidelines.md' }],
+  },
+  'dataAnalysis': {
+    persona: { content: 'You are a data analysis expert' },
+    instructions: [
+      { content: 'Analyze the provided data thoroughly' },
+      { content: 'Identify patterns and anomalies' },
+    ],
+  },
+  'documentation': {
+    persona: { path: 'personas/technical-writer.md' },
+    instructions: [{ path: 'instructions/documentation-style.md' }],
+  },
+});
+
+// Use templates
+const reviewPrompt = await cook({
+  basePath: __dirname,
+  template: 'codeReview',
+  content: [
+    { content: codeToReview, title: 'Code to Review' },
+  ],
+});
+
+const analysisPrompt = await cook({
+  basePath: __dirname,
+  template: 'dataAnalysis',
+  content: [
+    { content: dataset, title: 'Dataset', weight: 1.0 },
   ],
 });
 ```
 
 ### Fluent Recipe Builder
-Chainable API for those who prefer fluent interfaces:
+
+For those who prefer chainable APIs:
 
 ```typescript
 import { recipe } from 'riotprompt';
 
+// Using templates
 const prompt = await recipe(__dirname)
-  .template('commit')
+  .template('codeReview')
   .with({
-    content: [
-      { content: diffContent, title: 'Diff', weight: 1.0 }
-    ],
-    context: [
-      { content: additionalContext, title: 'Context', weight: 0.5 }
-    ]
+    content: [{ content: sourceCode, title: 'Code' }],
+    context: [{ content: projectContext, title: 'Context' }],
   });
 
-// Or build from scratch
+// Building from scratch
 const customPrompt = await recipe(__dirname)
-  .persona({ content: 'You are an expert code reviewer' })
-  .instructions(
-    { path: 'instructions/review.md' },
-    'Focus on performance and security'
-  )
-  .content({ content: sourceCode, title: 'Code to Review' })
+  .persona({ content: 'You are an expert consultant' })
+  .instructions('Analyze the situation carefully')
+  .content({ content: problemDescription, title: 'Problem' })
   .context({ directories: ['docs/'], weight: 0.3 })
   .cook();
 ```
 
 ## 🔧 Override Configuration
 
-The recipes system fully supports RiotPrompt's override system for customizing prompts:
+The recipes system fully supports RiotPrompt's override system:
 
 ```typescript
-// Single override directory
-const prompt = await cook({
-  basePath: __dirname,
-  overridePaths: ['./my-overrides'],
-  overrides: true,
-  template: 'commit',
-  content: [{ content: diffContent, title: 'Changes' }]
-});
-
-// Multiple override directories (closest to furthest priority)
 const prompt = await cook({
   basePath: __dirname,
   overridePaths: [
@@ -192,16 +167,8 @@ const prompt = await cook({
     '/etc/global-overrides'   // Lowest priority
   ],
   overrides: true,
-  template: 'commit',
-  content: [{ content: diffContent, title: 'Changes' }]
-});
-
-// Works with ALL recipe approaches
-const quickPrompt = await quick.commit(diffContent, {
-  basePath: __dirname,
-  overridePaths: ['./overrides'],
-  overrides: true,
-  userDirection: "Focus on security"
+  template: 'myTemplate',
+  content: [{ content: data, title: 'Data' }]
 });
 ```
 
@@ -235,53 +202,27 @@ The recipes system supports flexible content specification:
 }
 ```
 
-## 🔧 Built-in Templates
+## 📝 Template Management
 
-### Commit Template
 ```typescript
-const prompt = await commit({
-  basePath: __dirname,
-  content: [
-    { content: diffContent, title: 'Changes' },
-    { content: userDirection, title: 'Direction' }
-  ]
+import { registerTemplates, getTemplates, clearTemplates } from 'riotprompt';
+
+// Register templates
+registerTemplates({
+  'myWorkflow': {
+    persona: { path: 'personas/expert.md' },
+    instructions: [{ path: 'instructions/workflow.md' }],
+  },
 });
+
+// Get all registered templates
+const templates = getTemplates();
+
+// Clear all templates (useful for testing)
+clearTemplates();
 ```
 
-### Release Template
-```typescript
-const prompt = await release({
-  basePath: __dirname,
-  content: [
-    { content: logContent, title: 'Changelog' },
-    { content: diffContent, title: 'Changes' }
-  ]
-});
-```
-
-### Documentation Template
-```typescript
-const prompt = await documentation({
-  basePath: __dirname,
-  content: [
-    { path: 'src/api.ts', title: 'Source Code' },
-    { content: requirements, title: 'Requirements' }
-  ]
-});
-```
-
-### Review Template
-```typescript
-const prompt = await review({
-  basePath: __dirname,
-  content: [
-    { content: codeToReview, title: 'Code' },
-    { content: guidelines, title: 'Guidelines' }
-  ]
-});
-```
-
-## 🚀 Migration Guide
+## 🔄 Migration Guide
 
 Replace your existing Builder code:
 
@@ -302,16 +243,75 @@ const prompt = await cook({
 });
 ```
 
-## 💡 Why Recipes?
+## 💡 Example Use Cases
+
+### Code Analysis
+```typescript
+registerTemplates({
+  'codeAnalysis': {
+    persona: { content: 'You are a senior software engineer' },
+    instructions: [
+      { content: 'Analyze code quality, performance, and maintainability' },
+      { content: 'Provide specific, actionable feedback' },
+    ],
+  },
+});
+
+const prompt = await cook({
+  basePath: __dirname,
+  template: 'codeAnalysis',
+  content: [{ content: sourceCode, title: 'Source Code' }],
+});
+```
+
+### Document Processing
+```typescript
+registerTemplates({
+  'documentProcessor': {
+    persona: { path: 'personas/document-expert.md' },
+    instructions: [{ path: 'instructions/document-processing.md' }],
+  },
+});
+
+const prompt = await cook({
+  basePath: __dirname,
+  template: 'documentProcessor',
+  content: [
+    { content: documentText, title: 'Document' },
+    { path: 'examples/good-format.md', title: 'Format Example' },
+  ],
+});
+```
+
+### Data Analysis
+```typescript
+const prompt = await cook({
+  basePath: __dirname,
+  persona: { content: 'You are a data scientist' },
+  instructions: [
+    'Analyze the dataset for patterns and insights',
+    'Provide visualizations where helpful',
+  ],
+  content: [
+    { content: csvData, title: 'Dataset', weight: 1.0 },
+    { content: metadata, title: 'Metadata', weight: 0.5 },
+  ],
+  context: [
+    { directories: ['analysis-examples/'], weight: 0.3 },
+  ],
+});
+```
+
+## 🌟 Why Recipes?
 
 The name "Recipes" reflects the cooking metaphor:
 - **Ingredients**: Your content, context, and instructions
 - **Recipe**: The template and configuration
 - **Cook**: The function that combines everything into a delicious prompt
-- **Templates**: Pre-made recipes for common dishes (prompt types)
+- **Templates**: Pre-made recipes for common "dishes" (prompt types)
 
 Just like cooking, you can follow a recipe exactly, modify it to taste, or create your own from scratch!
 
 ---
 
-**Result**: Transform 25+ lines of verbose builder code into 1-5 lines of clean, declarative configuration. Your prompts will be easier to read, write, and maintain! 🎉 
+*The recipes system is completely generic and unopinionated. You define your own templates and workflows based on your specific needs.* 

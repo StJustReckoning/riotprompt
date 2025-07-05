@@ -43,7 +43,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.items).toHaveLength(2);
@@ -62,7 +62,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.items).toHaveLength(2);
@@ -82,7 +82,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -123,7 +123,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Main Title');
@@ -144,7 +144,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         // When a document starts with an h2, that becomes the main section title
@@ -166,7 +166,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         // First heading becomes the title of the main section
@@ -187,7 +187,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -206,7 +206,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -227,7 +227,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe(undefined);
@@ -255,7 +255,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -275,7 +275,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -294,7 +294,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -314,7 +314,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result.title).toBe('Section');
@@ -332,7 +332,7 @@ describe('parser', () => {
         ]);
 
         // Act
-        const result = parse(markdownContent);
+        const result = await parse(markdownContent);
 
         // Assert
         expect(result).toBeDefined();
