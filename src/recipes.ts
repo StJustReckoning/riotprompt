@@ -34,7 +34,7 @@ const RecipeConfigSchema = z.object({
     overrides: z.boolean().optional().default(false),
     parameters: ParametersSchema.optional().default({}),
 
-    // Content sections - smart inference based on naming
+    // Content sections
     persona: ContentItemSchema.optional(),
     instructions: z.array(ContentItemSchema).optional().default([]),
     content: z.array(ContentItemSchema).optional().default([]),
@@ -42,15 +42,14 @@ const RecipeConfigSchema = z.object({
 
     // Templates and inheritance
     extends: z.string().optional(), // Extend another recipe
-    template: z.enum(['commit', 'release', 'documentation', 'review', 'custom']).optional(),
+    template: z.string().optional(), // Generic template name
 });
 
 type RecipeConfig = z.infer<typeof RecipeConfigSchema>;
 type ContentItem = z.infer<typeof ContentItemSchema>;
 
-// ===== CONFIGURABLE TEMPLATE PATHS =====
+// ===== CONFIGURABLE TEMPLATE SYSTEM =====
 
-// Default template configurations - can be overridden by user
 export interface TemplateConfig {
     persona?: ContentItem;
     instructions?: ContentItem[];
@@ -58,71 +57,49 @@ export interface TemplateConfig {
     context?: ContentItem[];
 }
 
-// Built-in template configurations matching common patterns
-const DEFAULT_TEMPLATES: Record<string, TemplateConfig> = {
-    commit: {
-        persona: { path: "personas/developer.md", title: "Developer Persona" },
-        instructions: [
-            { path: "instructions/commit.md", title: "Commit Instructions" },
-        ],
-    },
-    release: {
-        persona: { path: "personas/releaser.md", title: "Release Manager Persona" },
-        instructions: [
-            { path: "instructions/release.md", title: "Release Instructions" },
-        ],
-    },
-    documentation: {
-        persona: { path: "personas/technical-writer.md", title: "Technical Writer Persona" },
-        instructions: [
-            { path: "instructions/documentation.md", title: "Documentation Instructions" },
-        ],
-    },
-    review: {
-        persona: { path: "personas/reviewer.md", title: "Code Reviewer Persona" },
-        instructions: [
-            { path: "instructions/review.md", title: "Review Instructions" },
-        ],
-    },
-};
-
 // User-customizable template registry
-let TEMPLATES = { ...DEFAULT_TEMPLATES };
+let TEMPLATES: Record<string, TemplateConfig> = {};
 
 /**
- * Configure custom template paths (perfect for KodrDriv constants!)
+ * Register custom templates with the recipes system
  * 
  * @example
  * ```typescript
- * // Configure using your KodrDriv constants
- * configureTemplates({
- *   commit: {
- *     persona: { path: DEFAULT_PERSONA_YOU_FILE },
- *     instructions: [{ path: DEFAULT_INSTRUCTIONS_COMMIT_FILE }]
+ * // Register your own templates
+ * registerTemplates({
+ *   myWorkflow: {
+ *     persona: { path: "personas/my-persona.md" },
+ *     instructions: [{ path: "instructions/my-instructions.md" }]
  *   },
- *   release: {
- *     persona: { path: DEFAULT_PERSONA_RELEASER_FILE },
- *     instructions: [{ path: DEFAULT_INSTRUCTIONS_RELEASE_FILE }]
+ *   anotherTemplate: {
+ *     persona: { content: "You are a helpful assistant" },
+ *     instructions: [{ content: "Follow these steps..." }]
  *   }
  * });
  * ```
  */
-export const configureTemplates = (customTemplates: Record<string, TemplateConfig>): void => {
-    TEMPLATES = { ...DEFAULT_TEMPLATES, ...customTemplates };
+export const registerTemplates = (templates: Record<string, TemplateConfig>): void => {
+    TEMPLATES = { ...TEMPLATES, ...templates };
 };
 
 /**
- * Get current template configuration
+ * Get currently registered templates
  */
 export const getTemplates = (): Record<string, TemplateConfig> => ({ ...TEMPLATES });
+
+/**
+ * Clear all registered templates
+ */
+export const clearTemplates = (): void => {
+    TEMPLATES = {};
+};
 
 // ===== CORE RECIPE ENGINE =====
 
 export const cook = async (config: Partial<RecipeConfig> & { basePath: string }): Promise<Prompt> => {
     // Parse and validate configuration with defaults
     const validatedConfig = RecipeConfigSchema.parse({
-        overridePaths: ["./"
-        ],
+        overridePaths: ["./"],
         overrides: false,
         parameters: {},
         instructions: [],
@@ -136,7 +113,22 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
     if (validatedConfig.template) {
         const template = TEMPLATES[validatedConfig.template];
         if (template) {
-            finalConfig = { ...template, ...validatedConfig };
+            finalConfig = {
+                ...validatedConfig,
+                persona: validatedConfig.persona || template.persona,
+                instructions: [
+                    ...(template.instructions || []),
+                    ...(validatedConfig.instructions || [])
+                ],
+                content: [
+                    ...(template.content || []),
+                    ...(validatedConfig.content || [])
+                ],
+                context: [
+                    ...(template.context || []),
+                    ...(validatedConfig.context || [])
+                ],
+            };
         }
     }
 
@@ -267,83 +259,10 @@ const processContentItem = async <T extends Weighted>(
     }
 };
 
-// ===== CONVENIENCE FUNCTIONS =====
-
-export const commit = (config: Partial<RecipeConfig> & { basePath: string }): Promise<Prompt> =>
-    cook({ ...config, template: 'commit' });
-
-export const release = (config: Partial<RecipeConfig> & { basePath: string }): Promise<Prompt> =>
-    cook({ ...config, template: 'release' });
-
-export const documentation = (config: Partial<RecipeConfig> & { basePath: string }): Promise<Prompt> =>
-    cook({ ...config, template: 'documentation' });
-
-export const review = (config: Partial<RecipeConfig> & { basePath: string }): Promise<Prompt> =>
-    cook({ ...config, template: 'review' });
-
-// ===== QUICK BUILDERS =====
-
-export const quick = {
-    /**
-   * Create a commit prompt with minimal configuration
-   */
-    commit: async (diffContent: string, options: {
-        basePath: string;
-        overridePaths?: string[];
-        overrides?: boolean;
-        userDirection?: string;
-        context?: string;
-        directories?: string[];
-    }): Promise<Prompt> => {
-        return cook({
-            basePath: options.basePath,
-            overridePaths: options.overridePaths,
-            overrides: options.overrides,
-            template: 'commit',
-            content: [
-                ...(options.userDirection ? [{ content: options.userDirection, title: 'User Direction', weight: 1.0 }] : []),
-                { content: diffContent, title: 'Diff', weight: 0.5 },
-            ],
-            context: [
-                ...(options.context ? [{ content: options.context, title: 'User Context', weight: 1.0 }] : []),
-                ...(options.directories ? [{ directories: options.directories, weight: 0.5 }] : []),
-            ],
-        });
-    },
-
-    /**
-   * Create a release prompt with minimal configuration
-   */
-    release: async (logContent: string, diffContent: string, options: {
-        basePath: string;
-        overridePaths?: string[];
-        overrides?: boolean;
-        releaseFocus?: string;
-        context?: string;
-        directories?: string[];
-    }): Promise<Prompt> => {
-        return cook({
-            basePath: options.basePath,
-            overridePaths: options.overridePaths,
-            overrides: options.overrides,
-            template: 'release',
-            content: [
-                ...(options.releaseFocus ? [{ content: options.releaseFocus, title: 'Release Focus', weight: 1.0 }] : []),
-                { content: logContent, title: 'Log', weight: 0.5 },
-                { content: diffContent, title: 'Diff', weight: 0.5 },
-            ],
-            context: [
-                ...(options.context ? [{ content: options.context, title: 'User Context', weight: 1.0 }] : []),
-                ...(options.directories ? [{ directories: options.directories, weight: 0.5 }] : []),
-            ],
-        });
-    },
-};
-
 // ===== FLUENT RECIPE BUILDER =====
 
 export const recipe = (basePath: string) => ({
-    template: (name: 'commit' | 'release' | 'documentation' | 'review') => ({
+    template: (name: string) => ({
         with: (config: Partial<RecipeConfig>) =>
             cook({ basePath, template: name, ...config }),
     }),

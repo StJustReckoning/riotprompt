@@ -1,11 +1,13 @@
-import { marked } from 'marked';
 import { create as createSection, Section, SectionOptions, SectionOptionsSchema } from '../items/section';
 import { create as createWeighted, Weighted, WeightedOptionsSchema } from '../items/weighted';
 
-export const parseMarkdown = <T extends Weighted>(
+export const parseMarkdown = async <T extends Weighted>(
     input: string | Buffer,
     options: Partial<SectionOptions> = {}
-): Section<T> => {
+): Promise<Section<T>> => {
+
+    // Dynamic import for marked (ES module)
+    const { marked } = await import('marked');
 
     let markdownContent;
     if (typeof input === 'string') {

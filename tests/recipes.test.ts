@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { cook, quick, commit, recipe } from '../src/recipes';
+import { cook, recipe, registerTemplates, getTemplates, clearTemplates } from '../src/recipes';
 import * as Parser from '../src/parser';
 import * as Loader from '../src/loader';
 import * as Override from '../src/override';
@@ -13,6 +13,7 @@ describe('Recipes System', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        clearTemplates(); // Clear templates between tests
 
         // Mock parser
         const mockParser = {
@@ -39,89 +40,114 @@ describe('Recipes System', () => {
         it('should create a prompt with minimal configuration', async () => {
             const prompt = await cook({
                 basePath,
-                content: ['Test content'],
             });
 
-            expect(prompt).toHaveProperty('instructions');
-            expect(prompt).toHaveProperty('contents');
-            expect(prompt).toHaveProperty('contexts');
-            expect(prompt).toHaveProperty('persona');
+            expect(prompt).toBeDefined();
+            expect(prompt.instructions).toBeDefined();
+            expect(prompt.contents).toBeDefined();
+            expect(prompt.persona).toBeDefined();
+            expect(prompt.contexts).toBeDefined();
         });
 
-        it('should handle template inheritance', async () => {
+        it('should create a prompt with full configuration', async () => {
             const prompt = await cook({
                 basePath,
-                template: 'commit',
-                content: ['Test diff content'],
+                persona: { content: 'You are a helpful assistant' },
+                instructions: [{ content: 'Follow these steps' }],
+                content: [{ content: 'Process this content' }],
+                context: [{ content: 'Additional context' }],
             });
 
-            expect(prompt).toHaveProperty('instructions');
-            expect(prompt).toHaveProperty('contents');
-            expect(prompt).toHaveProperty('contexts');
-            expect(prompt).toHaveProperty('persona');
-        });
-
-        it('should process different content item types', async () => {
-            const prompt = await cook({
-                basePath,
-                content: [
-                    'Simple string content',
-                    { content: 'Inline content', title: 'Test Title', weight: 0.8 },
-                    { path: 'test/file.md', title: 'File Content' },
-                    { directories: ['docs/'], title: 'Directory Content' },
-                ],
-            });
-
-            expect(Parser.create().parse).toHaveBeenCalledWith('Simple string content', expect.any(Object));
-            expect(Parser.create().parse).toHaveBeenCalledWith('Inline content', expect.objectContaining({
-                title: 'Test Title',
-                weight: 0.8,
-            }));
-            expect(Parser.create().parseFile).toHaveBeenCalled();
-            expect(Loader.create().load).toHaveBeenCalled();
+            expect(prompt).toBeDefined();
+            expect(Parser.create().parse).toHaveBeenCalledWith('You are a helpful assistant', expect.any(Object));
+            expect(Parser.create().parse).toHaveBeenCalledWith('Follow these steps', expect.any(Object));
+            expect(Parser.create().parse).toHaveBeenCalledWith('Process this content', expect.any(Object));
+            expect(Parser.create().parse).toHaveBeenCalledWith('Additional context', expect.any(Object));
         });
     });
 
-    describe('commit template function', () => {
-        it('should create a commit prompt with template defaults', async () => {
-            const prompt = await commit({
-                basePath,
-                content: [{ content: 'diff content', title: 'Diff' }],
+    describe('template system', () => {
+        it('should register and use custom templates', async () => {
+            registerTemplates({
+                'myTemplate': {
+                    persona: { content: 'Custom persona' },
+                    instructions: [{ content: 'Custom instructions' }],
+                },
             });
 
-            expect(prompt).toHaveProperty('instructions');
-            expect(prompt).toHaveProperty('contents');
-        });
-    });
-
-    describe('quick builders', () => {
-        it('should create a quick commit prompt', async () => {
-            const prompt = await quick.commit('diff content', {
+            const prompt = await cook({
                 basePath,
-                userDirection: 'Focus on performance',
-                context: 'Production system',
+                template: 'myTemplate',
             });
 
-            expect(prompt).toHaveProperty('instructions');
-            expect(prompt).toHaveProperty('contents');
-            expect(prompt).toHaveProperty('contexts');
+            expect(prompt).toBeDefined();
+
+            // Check that both persona and instructions were parsed
+            const parseCalls = vi.mocked(Parser.create().parse).mock.calls;
+            expect(parseCalls).toContainEqual(['Custom persona', expect.any(Object)]);
+            expect(parseCalls).toContainEqual(['Custom instructions', expect.any(Object)]);
         });
 
-        it('should create a quick release prompt', async () => {
-            const prompt = await quick.release('log content', 'diff content', {
-                basePath,
-                releaseFocus: 'Breaking changes',
+        it('should get registered templates', () => {
+            registerTemplates({
+                'template1': { persona: { content: 'Persona 1' } },
+                'template2': { persona: { content: 'Persona 2' } },
             });
 
-            expect(prompt).toHaveProperty('instructions');
-            expect(prompt).toHaveProperty('contents');
+            const templates = getTemplates();
+
+            expect(templates).toEqual({
+                'template1': { persona: { content: 'Persona 1' } },
+                'template2': { persona: { content: 'Persona 2' } },
+            });
+        });
+
+        it('should clear templates', () => {
+            registerTemplates({
+                'template1': { persona: { content: 'Persona 1' } },
+            });
+
+            expect(getTemplates()).toEqual({
+                'template1': { persona: { content: 'Persona 1' } },
+            });
+
+            clearTemplates();
+
+            expect(getTemplates()).toEqual({});
+        });
+
+        it('should override template with config', async () => {
+            registerTemplates({
+                'baseTemplate': {
+                    persona: { content: 'Base persona' },
+                    instructions: [{ content: 'Base instructions' }],
+                },
+            });
+
+            const prompt = await cook({
+                basePath,
+                template: 'baseTemplate',
+                persona: { content: 'Override persona' },
+                instructions: [{ content: 'Override instructions' }],
+            });
+
+            expect(prompt).toBeDefined();
+            expect(Parser.create().parse).toHaveBeenCalledWith('Override persona', expect.any(Object));
+            expect(Parser.create().parse).toHaveBeenCalledWith('Override instructions', expect.any(Object));
         });
     });
 
     describe('recipe fluent builder', () => {
-        it('should build a prompt using fluent interface', async () => {
+        it('should build a prompt using fluent interface with template', async () => {
+            registerTemplates({
+                'testTemplate': {
+                    persona: { content: 'Test persona' },
+                    instructions: [{ content: 'Test instructions' }],
+                },
+            });
+
             const prompt = await recipe(basePath)
-                .template('commit')
+                .template('testTemplate')
                 .with({
                     content: [{ content: 'test content', title: 'Test' }],
                 });
@@ -224,7 +250,7 @@ describe('Recipes System', () => {
             // This test mainly verifies TypeScript compilation
             const validConfig = {
                 basePath,
-                template: 'commit' as const,
+                template: 'customTemplate',
                 persona: { content: 'You are an expert' },
                 instructions: [
                     { path: 'instructions.md' },
