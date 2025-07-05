@@ -29,6 +29,7 @@ export interface Section<T extends Weighted> {
         options?: Partial<WeightedOptions>
     ) => Section<T>;
     remove: (index: number) => Section<T>;
+    toJSON: () => { title?: string; items: any[]; weight?: number; };
 }
 
 export const SectionOptionsSchema = z.object({
@@ -159,6 +160,19 @@ export const create = <T extends Weighted>(
         return append(item, itemOptions);
     }
 
+    const toJSON = () => {
+        return {
+            title: section.title,
+            items: items.map(item => {
+                // If the item has a toJSON method, call it, otherwise return the item itself
+                return typeof item === 'object' && item !== null && 'toJSON' in item && typeof item.toJSON === 'function'
+                    ? item.toJSON()
+                    : item;
+            }),
+            weight: section.weight,
+        };
+    };
+
     const section: Section<T> = {
         title: sectionOptions.title,
         items,
@@ -169,6 +183,7 @@ export const create = <T extends Weighted>(
         insert,
         remove,
         replace,
+        toJSON,
     }
 
     return section;

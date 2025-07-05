@@ -173,7 +173,10 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
     }
 
     // Process content
+    // eslint-disable-next-line no-console
     for (const item of finalConfig.content || []) {
+        // eslint-disable-next-line no-console
+        console.log('Processing content item:', JSON.stringify(item, null, 2));
         await processContentItem(item, contentSection, 'content', {
             basePath: finalConfig.basePath,
             parser,
@@ -228,11 +231,11 @@ const processContentItem = async <T extends Weighted>(
 
     if (typeof item === 'string') {
         // Simple string content
-        const parsedSection = ctx.parser.parse(item, sectionOptions);
+        const parsedSection = await ctx.parser.parse(item, sectionOptions);
         section.add(parsedSection);
     } else if ('content' in item) {
         // Inline content with options
-        const parsedSection = ctx.parser.parse(item.content, {
+        const parsedSection = await ctx.parser.parse(item.content, {
             ...sectionOptions,
             title: item.title,
             weight: item.weight,
@@ -261,27 +264,51 @@ const processContentItem = async <T extends Weighted>(
 
 // ===== FLUENT RECIPE BUILDER =====
 
-export const recipe = (basePath: string) => ({
-    template: (name: string) => ({
-        with: (config: Partial<RecipeConfig>) =>
-            cook({ basePath, template: name, ...config }),
-    }),
+export const recipe = (basePath: string) => {
+    const config: Partial<RecipeConfig> & { basePath: string } = { basePath };
 
-    persona: (persona: ContentItem) => ({
-        instructions: (...instructions: ContentItem[]) => ({
-            content: (...content: ContentItem[]) => ({
-                context: (...context: ContentItem[]) => ({
-                    cook: () => cook({ basePath, persona, instructions, content, context }),
-                }),
-                cook: () => cook({ basePath, persona, instructions, content }),
-            }),
-            cook: () => cook({ basePath, persona, instructions }),
-        }),
-        cook: () => cook({ basePath, persona }),
-    }),
+    const builder = {
+        template: (name: string) => {
+            config.template = name;
+            return builder;
+        },
+        with: (partialConfig: Partial<RecipeConfig>) => {
+            Object.assign(config, partialConfig);
+            return builder;
+        },
+        persona: (persona: ContentItem) => {
+            config.persona = persona;
+            return builder;
+        },
+        instructions: (...instructions: ContentItem[]) => {
+            config.instructions = [...(config.instructions || []), ...instructions];
+            return builder;
+        },
+        content: (...content: ContentItem[]) => {
+            config.content = [...(config.content || []), ...content];
+            return builder;
+        },
+        context: (...context: ContentItem[]) => {
+            config.context = [...(config.context || []), ...context];
+            return builder;
+        },
+        parameters: (parameters: any) => {
+            config.parameters = { ...config.parameters, ...parameters };
+            return builder;
+        },
+        overrides: (enabled: boolean) => {
+            config.overrides = enabled;
+            return builder;
+        },
+        overridePaths: (paths: string[]) => {
+            config.overridePaths = paths;
+            return builder;
+        },
+        cook: () => cook(config),
+    };
 
-    cook: (config: Partial<RecipeConfig>) => cook({ basePath, ...config }),
-});
+    return builder;
+};
 
 // Export types for external use
 export type { RecipeConfig, ContentItem }; 
