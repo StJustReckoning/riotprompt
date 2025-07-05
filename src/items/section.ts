@@ -162,14 +162,14 @@ export const create = <T extends Weighted>(
 
     const toJSON = () => {
         return {
-            title: sectionOptions.title,
+            title: section.title,
             items: items.map(item => {
                 // If the item has a toJSON method, call it, otherwise return the item itself
                 return typeof item === 'object' && item !== null && 'toJSON' in item && typeof item.toJSON === 'function'
                     ? item.toJSON()
                     : item;
             }),
-            weight: sectionOptions.weight,
+            weight: section.weight,
         };
     };
 
