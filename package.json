@@ -1,6 +1,6 @@
 {
     "name": "@riotprompt/riotprompt",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Get it together, and organize your prompts.",
     "type": "module",
     "main": "./dist/riotprompt.cjs",
