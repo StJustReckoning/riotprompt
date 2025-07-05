@@ -1,97 +1,86 @@
-# 🚀 RiotPrompt
+# 🔥 RiotPrompt
 
-A structured prompt engineering library for LLMs - because you have better things to do than worry about prompt formatting.
+A powerful, flexible prompt building library for AI applications with zero hardcoded assumptions.
 
-> "I don't wanna hear it, know you're full of sh*t" - Minor Threat
+## 🎯 Features
 
-[![npm version](https://badge.fury.io/js/@riotprompt%2Friotprompt.svg)](https://badge.fury.io/js/@riotprompt%2Friotprompt)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+- **Generic & Extensible**: No hardcoded domain concepts - build any type of prompt
+- **Template System**: Create reusable templates for common patterns
+- **Declarative Configuration**: Simple object-based prompt creation
+- **Type-Safe**: Full TypeScript support with excellent IntelliSense
+- **Override System**: Customize prompts with hierarchical overrides
+- **Multiple Content Types**: Support for files, directories, and inline content
 
-## Quick Start
+## 🚀 Quick Start
 
-### Installation
+```typescript
+import { cook, registerTemplates } from 'riotprompt';
 
-```bash
-npm install @riotprompt/riotprompt
-```
-
-### Basic Usage
-
-```js
-import { createSection, Formatter } from '@riotprompt/riotprompt';
-
-// Create a section
-const instructions = createSection({ title: "Instructions" });
-instructions.add("Answer in a concise manner");
-instructions.add("Provide code examples when appropriate");
-
-// Format it
-const formatter = Formatter.create();
-console.log(formatter.format(instructions));
-```
-
-**Output:**
-```xml
-<Instructions>
-Answer in a concise manner
-
-Provide code examples when appropriate
-</Instructions>
-```
-
-### Revolutionary Recipes System
-
-Transform verbose builder code into simple, declarative configuration:
-
-```js
-import { quick } from '@riotprompt/riotprompt';
-
-// Just one line!
-const prompt = await quick.commit(diffContent, { 
+// Simple prompt creation
+const prompt = await cook({
   basePath: __dirname,
-  userDirection: "Focus on performance" 
+  persona: { content: 'You are a helpful AI assistant' },
+  instructions: [
+    { content: 'Analyze the provided content carefully' },
+    { path: 'instructions/guidelines.md' },
+  ],
+  content: [
+    { content: sourceData, title: 'Source Data', weight: 1.0 },
+    { directories: ['examples/'], weight: 0.5 },
+  ],
+  context: [
+    { content: 'Additional context', title: 'Context' },
+  ],
+});
+
+// Register and use templates
+registerTemplates({
+  'analysis': {
+    persona: { content: 'You are an expert analyst' },
+    instructions: [{ content: 'Provide detailed analysis' }],
+  },
+});
+
+const analysisPrompt = await cook({
+  basePath: __dirname,
+  template: 'analysis',
+  content: [{ content: dataToAnalyze, title: 'Data' }],
 });
 ```
 
-## Why RiotPrompt?
+## 📚 Documentation
 
-- **📋 Structured Organization**: Organize prompts into logical categories (instructions, content, context)
-- **🔄 Reusable Components**: Create reusable persona definitions and prompt templates  
-- **⚡ Multiple APIs**: Choose from simple one-liners to complex programmatic construction
-- **🎨 Flexible Formatting**: Support for both XML tags and Markdown output
-- **📁 File-Based Management**: Load prompts from files and directories
-- **🔧 Override System**: Multi-layered customization without modifying core files
-- **📊 90%+ Code Reduction**: Transform 25+ lines into 1-5 lines of clean configuration
+- [Core Concepts](docs/public/core-concepts.md)
+- [Recipes System](docs/public/recipes.md)
+- [API Reference](docs/public/api-reference.md)
+- [Template Configuration](docs/public/template-configuration.md)
 
-## Documentation
+## 🔧 Installation
 
-📖 **[Complete Documentation](https://stjustreckoning.github.io/riotprompt/)**
+```bash
+npm install riotprompt
+```
 
-### Key Topics
+## 💡 Philosophy
 
-- **[Getting Started](https://stjustreckoning.github.io/riotprompt/?section=getting-started)** - Installation and basic usage
-- **[Core Concepts](https://stjustreckoning.github.io/riotprompt/?section=core-concepts)** - Understanding WeightedText and Sections
-- **[Recipes System](https://stjustreckoning.github.io/riotprompt/?section=recipes)** - Revolutionary prompt creation API
-- **[Override System](https://stjustreckoning.github.io/riotprompt/?section=override)** - Multi-layered customization
-- **[API Reference](https://stjustreckoning.github.io/riotprompt/?section=api-reference)** - Complete API documentation
+RiotPrompt is designed to be completely generic and unopinionated. Unlike other prompt libraries that assume specific use cases, RiotPrompt provides the building blocks for any prompt-based application while maintaining type safety and developer experience.
 
-## Model Support
+## 🏗️ Architecture
 
-RiotPrompt works with any LLM that accepts text prompts:
-- OpenAI GPT models
-- Anthropic Claude
-- Google Gemini
-- Local models via Ollama
-- Any other text-based LLM
+- **Cook Function**: Core prompt creation engine
+- **Template System**: Reusable configuration patterns
+- **Content Processing**: Flexible content handling (files, directories, inline)
+- **Override System**: Hierarchical customization
+- **Type Safety**: Full TypeScript support throughout
 
-## Contributing
+## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## License
+## 📄 License
 
-Licensed under the [Apache-2.0 License](LICENSE).
+MIT License - see [LICENSE](LICENSE) for details.
 
-## Why the Name?
+---
 
-Because organizing your prompts shouldn't be a riot - but the results should be! 🎉
+*Build better prompts, faster.*

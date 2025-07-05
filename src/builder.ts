@@ -157,7 +157,7 @@ export const create = (builderOptions: OptionsParam): Instance => {
     ): Promise<Instance> => {
         logger.debug("Adding content", typeof content);
         const currentOptions = loadOptions(sectionOptions);
-        const parsedContentSection: Section<Content> = parser.parse<Content>(content, currentOptions);
+        const parsedContentSection: Section<Content> = await parser.parse<Content>(content, currentOptions);
         contentSection.add(parsedContentSection);
         return instance as Instance;
     }
@@ -169,7 +169,7 @@ export const create = (builderOptions: OptionsParam): Instance => {
     ): Promise<Instance> => {
         logger.debug("Adding context", typeof context);
         const currentOptions = loadOptions(sectionOptions);
-        const parsedContextSection: Section<Context> = parser.parse<Context>(context, currentOptions);
+        const parsedContextSection: Section<Context> = await parser.parse<Context>(context, currentOptions);
         contextSection.add(parsedContextSection);
         return instance as Instance;
     }

@@ -20,7 +20,7 @@ export type Options = z.infer<typeof OptionsSchema>;
 export type OptionsParam = Partial<Options>;
 
 export interface Instance {
-    parse: <T extends Weighted>(input: string | Buffer, options?: SectionOptions) => Section<T>;
+    parse: <T extends Weighted>(input: string | Buffer, options?: SectionOptions) => Promise<Section<T>>;
     parseFile: <T extends Weighted>(filePath: string, options?: SectionOptions) => Promise<Section<T>>;
 }
 
@@ -50,7 +50,7 @@ export const create = (parserOptions?: OptionsParam): Instance => {
             const content = await fs.readFile(filePath, 'utf-8');
             // Only use the filename as title if no title was explicitly provided
             const fileName = path.basename(filePath, path.extname(filePath));
-            return parse(content, {
+            return await parse(content, {
                 ...currentOptions,
                 title: currentOptions?.title || fileName
             });
@@ -72,15 +72,15 @@ export const create = (parserOptions?: OptionsParam): Instance => {
      * @param content The content to parse
      * @returns A Section containing all content in a hierarchical structure
      */
-    const parse = <T extends Weighted>(
+    const parse = async <T extends Weighted>(
         content: string | Buffer,
         options: Partial<SectionOptions> = {}
-    ): Section<T> => {
+    ): Promise<Section<T>> => {
         const currentOptions = loadOptions(options);
 
         let mainSection: Section<T>;
         if (isMarkdown(content)) {
-            mainSection = parseMarkdown<T>(content, currentOptions);
+            mainSection = await parseMarkdown<T>(content, currentOptions);
         } else if (isText(content)) {
             mainSection = parseText<T>(content, currentOptions);
         } else {

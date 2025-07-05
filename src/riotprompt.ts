@@ -15,9 +15,9 @@ export * as Loader from "./loader";
 export * as Override from "./override";
 export * as Builder from "./builder";
 
-// ===== NEW RECIPES SYSTEM =====
+// ===== RECIPES SYSTEM =====
 export * as Recipes from "./recipes";
-export { cook, commit, release, documentation, review, quick, recipe, configureTemplates, getTemplates } from "./recipes";
+export { cook, recipe, registerTemplates, getTemplates, clearTemplates } from "./recipes";
 
 // Export types
 export type { Content } from "./items/content";
