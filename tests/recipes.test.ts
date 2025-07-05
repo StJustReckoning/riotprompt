@@ -150,7 +150,8 @@ describe('Recipes System', () => {
                 .template('testTemplate')
                 .with({
                     content: [{ content: 'test content', title: 'Test' }],
-                });
+                })
+                .cook();
 
             expect(prompt).toHaveProperty('instructions');
             expect(prompt).toHaveProperty('contents');
