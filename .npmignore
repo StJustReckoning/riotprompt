@@ -32,3 +32,4 @@ eslint.config.mjs
 nodemon.json
 vite.config.ts
 vitest.config.ts
+.cursor/

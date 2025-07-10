@@ -22,7 +22,7 @@ export const FormatOptionsSchema = z.object({
     sectionTitleProperty: SectionTitlePropertySchema,
     sectionTitlePrefix: z.string().optional(),
     sectionTitleSeparator: z.string().optional(),
-    sectionDepth: z.number().default(1),
+    sectionDepth: z.number().default(0),
 });
 
 export type FormatOptions = z.infer<typeof FormatOptionsSchema>;
@@ -113,7 +113,7 @@ export const create = (formatterOptions?: OptionsParam): Instance => {
             if (formatOptions.sectionSeparator === "tag") {
                 return `<${section.title ?? "section"}>\n${formattedItems}\n</${section.title ?? "section"}>`;
             } else {
-                // Default depth to 1 if not provided, resulting in H2 (##) matching the test case.
+                // Use the current section depth for heading level
                 const headingLevel = currentSectionDepth;
                 const hashes = '#'.repeat(headingLevel);
                 logger.silly(`\t\tHeading level: ${headingLevel}`);
