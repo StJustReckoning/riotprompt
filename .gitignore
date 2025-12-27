@@ -1,3 +1,4 @@
+*~
 .env 
 dist
 node_modules
@@ -11,3 +12,4 @@ processed/.DS_Store
 **/.DS_Store
 processed/
 output/**
+agentic-*.md
