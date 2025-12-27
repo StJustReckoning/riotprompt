@@ -7,4 +7,6 @@ coverage/
 test/
 output/
 input/
+processed/.DS_Store
+**/.DS_Store
 processed/
