@@ -6,6 +6,7 @@ import { ParametersSchema } from "./items/parameters";
 import { SectionOptions } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
 import { Content, Context, createPrompt, createSection, Instruction, Loader, Override, Parser, Prompt, Section, Weighted } from "./riotprompt";
+import { type TokenBudgetConfig } from "./token-budget";
 import { Tool, ToolRegistry } from "./tools";
 
 // ===== CONFIGURATION SCHEMAS =====
@@ -469,10 +470,16 @@ export const recipe = (basePath: string) => {
             return builder;
         },
         cook: () => cook(config),
-        buildConversation: async (model: Model) => {
+        buildConversation: async (model: Model, tokenBudget?: TokenBudgetConfig) => {
             const prompt = await cook(config);
             const conversation = ConversationBuilder.create({ model }, config.logger);
             conversation.fromPrompt(prompt, model);
+
+            // Apply token budget if provided
+            if (tokenBudget) {
+                conversation.withTokenBudget(tokenBudget);
+            }
+
             return conversation;
         },
         getToolRegistry: (): ToolRegistry | undefined => {

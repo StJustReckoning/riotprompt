@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Model } from "./chat";
+import { ContextManager, type DynamicContentItem } from "./context-manager";
 import { Content } from "./items/content";
 import { Context } from "./items/context";
 import { Instruction } from "./items/instruction";
@@ -7,8 +8,32 @@ import { Section } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
 import { Prompt } from "./prompt";
 import * as Formatter from "./formatter";
+import { TokenBudgetManager, type TokenBudgetConfig, type TokenUsage, type CompressionStrategy } from "./token-budget";
 
 // ===== TYPE DEFINITIONS =====
+
+/**
+ * Options for injecting context
+ */
+export interface InjectOptions {
+    // Where to inject
+    position?: 'end' | 'before-last' | 'after-system' | number;
+
+    // How to format
+    format?: 'structured' | 'inline' | 'reference';
+
+    // Deduplication
+    deduplicate?: boolean;
+    deduplicateBy?: 'id' | 'content' | 'hash';
+
+    // Priority
+    priority?: 'high' | 'medium' | 'low';
+    weight?: number;
+
+    // Metadata
+    category?: string;
+    source?: string;
+}
 
 /**
  * Represents a tool call made by the assistant
@@ -61,6 +86,7 @@ export interface ConversationState {
     messages: ConversationMessage[];
     metadata: ConversationMetadata;
     contextProvided: Set<string>;
+    contextManager: ContextManager;
 }
 
 /**
@@ -119,6 +145,7 @@ export class ConversationBuilder {
     private state: ConversationState;
     private config: ConversationBuilderConfig;
     private logger: any;
+    private budgetManager?: TokenBudgetManager;
 
     private constructor(config: ConversationBuilderConfig, logger?: any) {
         this.config = ConversationBuilderConfigSchema.parse(config) as ConversationBuilderConfig;
@@ -134,6 +161,7 @@ export class ConversationBuilder {
                 toolCallCount: 0,
             },
             contextProvided: new Set<string>(),
+            contextManager: new ContextManager(logger),
         };
 
         this.logger.debug('Created ConversationBuilder', { model: this.config.model });
@@ -200,7 +228,7 @@ export class ConversationBuilder {
     }
 
     /**
-     * Add a user message
+     * Add a user message (with automatic budget management)
      */
     addUserMessage(content: string | Section<Content>): this {
         this.logger.debug('Adding user message');
@@ -214,10 +242,20 @@ export class ConversationBuilder {
             messageContent = formatter.format(content);
         }
 
-        this.state.messages.push({
+        const message: ConversationMessage = {
             role: 'user',
             content: messageContent,
-        });
+        };
+
+        // Check budget if enabled
+        if (this.budgetManager) {
+            if (!this.budgetManager.canAddMessage(message, this.state.messages)) {
+                this.logger.warn('Budget exceeded, compressing conversation');
+                this.state.messages = this.budgetManager.compress(this.state.messages);
+            }
+        }
+
+        this.state.messages.push(message);
 
         this.updateMetadata();
         return this;
@@ -284,59 +322,92 @@ export class ConversationBuilder {
     }
 
     /**
-     * Inject context into the conversation
-     * Can be added at the end or before the last message
+     * Inject context into the conversation with advanced options
+     *
+     * @param context - Array of content items to inject
+     * @param options - Injection options (position, format, deduplication, etc.)
      */
-    injectContext(context: Array<{ content: string; title?: string; weight?: number }>, position: 'end' | 'before-last' = 'end'): this {
-        this.logger.debug('Injecting context', { itemCount: context.length, position });
+    injectContext(context: DynamicContentItem[], options?: InjectOptions): this {
+        const opts: Required<InjectOptions> = {
+            position: 'end',
+            format: 'structured',
+            deduplicate: this.config.deduplicateContext ?? true,
+            deduplicateBy: 'id',
+            priority: 'medium',
+            weight: 1.0,
+            category: undefined as any,
+            source: undefined as any,
+            ...options,
+        };
 
-        // Filter out duplicates if deduplication is enabled
-        const itemsToAdd: Array<{ content: string; title?: string; weight?: number }> = [];
+        this.logger.debug('Injecting context', { itemCount: context.length, options: opts });
 
-        if (this.config.trackContext && this.config.deduplicateContext) {
-            context.forEach(item => {
-                const key = item.title || item.content.substring(0, 50);
+        // Filter out duplicates if enabled
+        const itemsToAdd: DynamicContentItem[] = [];
 
-                if (this.state.contextProvided.has(key)) {
-                    this.logger.debug('Skipping duplicate context', { key });
-                    return;
+        for (const item of context) {
+            const enrichedItem: DynamicContentItem = {
+                ...item,
+                priority: item.priority || opts.priority,
+                weight: item.weight || opts.weight,
+                category: item.category || opts.category,
+                source: item.source || opts.source,
+                timestamp: item.timestamp || new Date(),
+            };
+
+            // Check deduplication
+            if (opts.deduplicate) {
+                let skip = false;
+
+                switch (opts.deduplicateBy) {
+                    case 'id':
+                        if (enrichedItem.id && this.state.contextManager.hasContext(enrichedItem.id)) {
+                            this.logger.debug('Skipping duplicate context by ID', { id: enrichedItem.id });
+                            skip = true;
+                        }
+                        break;
+                    case 'hash':
+                        if (this.state.contextManager.hasContentHash(enrichedItem.content)) {
+                            this.logger.debug('Skipping duplicate context by hash');
+                            skip = true;
+                        }
+                        break;
+                    case 'content':
+                        if (this.state.contextManager.hasSimilarContent(enrichedItem.content)) {
+                            this.logger.debug('Skipping duplicate context by content');
+                            skip = true;
+                        }
+                        break;
                 }
 
-                this.state.contextProvided.add(key);
-                itemsToAdd.push(item);
-            });
-        } else {
-            itemsToAdd.push(...context);
-
-            // Track context if enabled
-            if (this.config.trackContext) {
-                context.forEach(item => {
-                    const key = item.title || item.content.substring(0, 50);
-                    this.state.contextProvided.add(key);
-                });
+                if (skip) {
+                    continue;
+                }
             }
+
+            itemsToAdd.push(enrichedItem);
         }
 
-        // Only add message if we have items to add
+        // Only proceed if we have items to add
         if (itemsToAdd.length === 0) {
             return this;
         }
 
-        // Format context as user message
-        const contextMessages = itemsToAdd.map(item => {
-            const title = item.title || 'Context';
-            return `## ${title}\n\n${item.content}`;
-        }).join('\n\n');
+        // Calculate position
+        const position = this.calculatePosition(opts.position);
 
-        const contextMessage: ConversationMessage = {
-            role: 'user',
-            content: contextMessages,
-        };
+        // Format and inject
+        for (const item of itemsToAdd) {
+            const formatted = this.formatContextItem(item, opts.format);
+            const contextMessage: ConversationMessage = {
+                role: 'user',
+                content: formatted,
+            };
 
-        if (position === 'before-last' && this.state.messages.length > 0) {
-            this.state.messages.splice(this.state.messages.length - 1, 0, contextMessage);
-        } else {
-            this.state.messages.push(contextMessage);
+            this.state.messages.splice(position, 0, contextMessage);
+
+            // Track in context manager
+            this.state.contextManager.track(item, position);
         }
 
         this.updateMetadata();
@@ -462,12 +533,16 @@ export class ConversationBuilder {
             this.logger
         );
 
-        // Deep copy state
-        cloned.state = {
-            messages: this.state.messages.map(msg => ({ ...msg })),
-            metadata: { ...this.state.metadata },
-            contextProvided: new Set(this.state.contextProvided),
-        };
+        // Deep copy state (note: contextManager is already created in constructor)
+        cloned.state.messages = this.state.messages.map(msg => ({ ...msg }));
+        cloned.state.metadata = { ...this.state.metadata };
+        cloned.state.contextProvided = new Set(this.state.contextProvided);
+
+        // Copy context manager state
+        const allContext = this.state.contextManager.getAll();
+        allContext.forEach(item => {
+            cloned.state.contextManager.track(item, item.position);
+        });
 
         return cloned;
     }
@@ -499,10 +574,121 @@ export class ConversationBuilder {
     }
 
     /**
+     * Get the context manager
+     */
+    getContextManager(): ContextManager {
+        return this.state.contextManager;
+    }
+
+    /**
+     * Get conversation state (for conditional injection)
+     */
+    getState(): ConversationState {
+        return {
+            messages: [...this.state.messages],
+            metadata: { ...this.state.metadata },
+            contextProvided: new Set(this.state.contextProvided),
+            contextManager: this.state.contextManager,
+        };
+    }
+
+    /**
+     * Configure token budget
+     */
+    withTokenBudget(config: TokenBudgetConfig): this {
+        this.logger.debug('Configuring token budget', { max: config.max });
+        this.budgetManager = new TokenBudgetManager(config, this.config.model, this.logger);
+        return this;
+    }
+
+    /**
+     * Get current token usage
+     */
+    getTokenUsage(): TokenUsage {
+        if (!this.budgetManager) {
+            return { used: 0, max: Infinity, remaining: Infinity, percentage: 0 };
+        }
+        return this.budgetManager.getCurrentUsage(this.state.messages);
+    }
+
+    /**
+     * Manually compress conversation
+     */
+    compress(_strategy?: CompressionStrategy): this {
+        if (this.budgetManager) {
+            this.state.messages = this.budgetManager.compress(this.state.messages);
+        }
+        return this;
+    }
+
+    /**
      * Build and return the builder (for fluent API compatibility)
      */
     build(): this {
         return this;
+    }
+
+    /**
+     * Calculate position for context injection
+     */
+    private calculatePosition(position: InjectOptions['position']): number {
+        if (typeof position === 'number') {
+            return Math.max(0, Math.min(position, this.state.messages.length));
+        }
+
+        switch (position) {
+            case 'end':
+                return this.state.messages.length;
+            case 'before-last':
+                return Math.max(0, this.state.messages.length - 1);
+            case 'after-system': {
+                // Find last system message (reverse search for compatibility)
+                let lastSystemIdx = -1;
+                for (let i = this.state.messages.length - 1; i >= 0; i--) {
+                    if (this.state.messages[i].role === 'system') {
+                        lastSystemIdx = i;
+                        break;
+                    }
+                }
+                return lastSystemIdx >= 0 ? lastSystemIdx + 1 : 0;
+            }
+            default:
+                return this.state.messages.length;
+        }
+    }
+
+    /**
+     * Format context item based on format option
+     */
+    private formatContextItem(item: DynamicContentItem, format: 'structured' | 'inline' | 'reference'): string {
+        switch (format) {
+            case 'structured': {
+                let result = `## ${item.title || 'Context'}\n\n${item.content}`;
+
+                // Add metadata if available
+                const metadata: string[] = [];
+                if (item.source) {
+                    metadata.push(`Source: ${item.source}`);
+                }
+                if (item.timestamp) {
+                    metadata.push(`Timestamp: ${item.timestamp.toISOString()}`);
+                }
+                if (metadata.length > 0) {
+                    result += `\n\n_${metadata.join(' | ')}_`;
+                }
+
+                return result;
+            }
+
+            case 'inline':
+                return `Note: ${item.title ? `${item.title}: ` : ''}${item.content}`;
+
+            case 'reference':
+                return `[Context Reference: ${item.id || 'unknown'}]\nSee attached context${item.title ? ` for ${item.title}` : ''}`;
+
+            default:
+                return item.content;
+        }
     }
 
     /**

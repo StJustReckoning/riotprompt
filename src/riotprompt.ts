@@ -21,6 +21,8 @@ export { cook, recipe, registerTemplates, getTemplates, clearTemplates, generate
 
 // ===== CONVERSATION MANAGEMENT =====
 export { ConversationBuilder } from "./conversation";
+export { ContextManager } from "./context-manager";
+export { TokenCounter, TokenBudgetManager } from "./token-budget";
 
 // ===== TOOL INTEGRATION =====
 export { ToolRegistry } from "./tools";
@@ -42,8 +44,21 @@ export type {
     ConversationMessage,
     ConversationBuilderConfig,
     ConversationMetadata,
+    ConversationState,
+    InjectOptions,
     ToolCall
 } from "./conversation";
+export type {
+    DynamicContentItem,
+    TrackedContextItem,
+    ContextStats
+} from "./context-manager";
+export type {
+    TokenUsage,
+    TokenBudgetConfig,
+    CompressionStats,
+    CompressionStrategy
+} from "./token-budget";
 export type {
     Tool,
     ToolParameter,
