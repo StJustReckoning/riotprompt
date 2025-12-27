@@ -238,36 +238,21 @@ interface OverrideOptions {
 
 ## Recipes API
 
-### Quick Builders
+### Configuration-Driven Recipe Creation
 
 ```typescript
-namespace quick {
-  function commit(diffContent: string, options: QuickOptions): Promise<Prompt>
-  function release(logContent: string, diffContent: string, options: QuickOptions): Promise<Prompt>
-}
+function cook(config: RecipeConfig): Promise<Prompt>
 
-interface QuickOptions {
+interface RecipeConfig {
   basePath: string;
   overridePaths?: string[];
   overrides?: boolean;
-  userDirection?: string;
-  context?: string;
-  directories?: string[];
-}
-```
-
-### Template Functions
-
-```typescript
-function commit(config: TemplateConfig): Promise<Prompt>
-function release(config: TemplateConfig): Promise<Prompt>
-function documentation(config: TemplateConfig): Promise<Prompt>
-function review(config: TemplateConfig): Promise<Prompt>
-
-interface TemplateConfig {
-  basePath: string;
-  overridePaths?: string[];
-  overrides?: boolean;
+  parameters?: Parameters;
+  
+  // Template inheritance
+  template?: string;
+  
+  // Content sections
   persona?: ContentItem;
   instructions?: ContentItem[];
   content?: ContentItem[];
@@ -283,21 +268,38 @@ type ContentItem = string | {
 }
 ```
 
-### Configuration-Driven
+### Fluent Recipe Builder
 
 ```typescript
-function cook(config: RecipeConfig): Promise<Prompt>
+function recipe(basePath: string): RecipeBuilder
 
-interface RecipeConfig extends TemplateConfig {
-  template?: string;
+interface RecipeBuilder {
+  template(name: string): RecipeBuilder;
+  with(config: Partial<RecipeConfig>): RecipeBuilder;
+  persona(persona: ContentItem): RecipeBuilder;
+  instructions(...instructions: ContentItem[]): RecipeBuilder;
+  content(...content: ContentItem[]): RecipeBuilder;
+  context(...context: ContentItem[]): RecipeBuilder;
+  parameters(params: Parameters): RecipeBuilder;
+  overrides(enabled: boolean): RecipeBuilder;
+  overridePaths(paths: string[]): RecipeBuilder;
+  cook(): Promise<Prompt>;
 }
 ```
 
 ### Template Configuration
 
 ```typescript
-function configureTemplates(templates: Record<string, TemplateConfig>): void
+function registerTemplates(templates: Record<string, TemplateConfig>): void
 function getTemplates(): Record<string, TemplateConfig>
+function clearTemplates(): void
+
+interface TemplateConfig {
+  persona?: ContentItem;
+  instructions?: ContentItem[];
+  content?: ContentItem[];
+  context?: ContentItem[];
+}
 ```
 
 ## Prompt
@@ -371,11 +373,10 @@ import {
 
 // Recipes system
 import {
-  quick,
-  commit,
-  release,
   cook,
   recipe,
-  configureTemplates
+  registerTemplates,
+  getTemplates,
+  clearTemplates
 } from '@riotprompt/riotprompt';
 ``` 

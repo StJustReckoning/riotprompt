@@ -9,23 +9,17 @@ The RiotPrompt Recipes system supports **automatic file loading** through config
 In your main application file or a setup file:
 
 ```typescript
-import { configureTemplates } from '@riotprompt/riotprompt';
-import { 
-  DEFAULT_PERSONA_YOU_FILE, 
-  DEFAULT_INSTRUCTIONS_COMMIT_FILE,
-  DEFAULT_PERSONA_RELEASER_FILE,
-  DEFAULT_INSTRUCTIONS_RELEASE_FILE 
-} from './constants';
+import { registerTemplates } from '@riotprompt/riotprompt';
 
 // Configure templates to use your exact file paths
-configureTemplates({
+registerTemplates({
   commit: {
-    persona: { path: DEFAULT_PERSONA_YOU_FILE, title: 'Developer Persona' },
-    instructions: [{ path: DEFAULT_INSTRUCTIONS_COMMIT_FILE, title: 'Commit Instructions' }]
+    persona: { path: 'personas/developer.md', title: 'Developer Persona' },
+    instructions: [{ path: 'instructions/commit.md', title: 'Commit Instructions' }]
   },
   release: {
-    persona: { path: DEFAULT_PERSONA_RELEASER_FILE, title: 'Release Manager Persona' },
-    instructions: [{ path: DEFAULT_INSTRUCTIONS_RELEASE_FILE, title: 'Release Instructions' }]
+    persona: { path: 'personas/release-manager.md', title: 'Release Manager Persona' },
+    instructions: [{ path: 'instructions/release.md', title: 'Release Instructions' }]
   }
 });
 ```
@@ -35,28 +29,22 @@ configureTemplates({
 Once configured, **all template usage automatically loads your files**:
 
 ```typescript
-import { quick, commit, recipe } from '@riotprompt/riotprompt';
+import { cook, recipe } from '@riotprompt/riotprompt';
 
 // ✨ All these automatically include your persona & instruction files:
 
-// Quick builders
-const prompt1 = await quick.commit(diffContent, {
+// Configuration-driven approach
+const prompt1 = await cook({
   basePath: __dirname,
-  userDirection: "Focus on performance"
-});
-
-// Template functions  
-const prompt2 = await commit({
-  basePath: __dirname,
+  template: 'commit',
   content: [{ content: diffContent, title: 'Diff' }]
 });
 
-// Recipe builder
-const prompt3 = await recipe(__dirname)
+// Recipe builder (fluent API)
+const prompt2 = await recipe(__dirname)
   .template('commit')  // 🎯 Automatically loads your configured files!
-  .with({
-    content: [{ content: diffContent, title: 'Diff' }]
-  });
+  .content({ content: diffContent, title: 'Diff' })
+  .cook();
 ```
 
 ## 🎨 Template Configuration Options
@@ -64,7 +52,7 @@ const prompt3 = await recipe(__dirname)
 ### Full Configuration Example
 
 ```typescript
-import { configureTemplates, TemplateConfig } from '@riotprompt/riotprompt';
+import { registerTemplates, TemplateConfig } from '@riotprompt/riotprompt';
 
 const templates: Record<string, TemplateConfig> = {
   commit: {
@@ -100,7 +88,7 @@ const templates: Record<string, TemplateConfig> = {
   }
 };
 
-configureTemplates(templates);
+registerTemplates(templates);
 ```
 
 ### Content Item Types
@@ -151,7 +139,7 @@ console.log('Available templates:', Object.keys(currentTemplates));
 
 ```typescript
 // Add new template
-configureTemplates({
+registerTemplates({
   'custom-workflow': {
     persona: { path: 'personas/workflow-expert.md' },
     instructions: [{ path: 'instructions/workflow.md' }]
@@ -159,7 +147,7 @@ configureTemplates({
 });
 
 // Update existing template
-configureTemplates({
+registerTemplates({
   commit: {
     ...getTemplates().commit,
     instructions: [
@@ -204,21 +192,27 @@ return await builder.build();
 
 ```typescript
 // 1. Configure once (in setup)
-configureTemplates({
+registerTemplates({
   commit: {
-    persona: { path: DEFAULT_PERSONA_YOU_FILE },
-    instructions: [{ path: DEFAULT_INSTRUCTIONS_COMMIT_FILE }]
+    persona: { path: 'personas/developer.md' },
+    instructions: [{ path: 'instructions/commit.md' }]
   }
 });
 
 // 2. Use anywhere (1-3 lines!)
 const createCommitPrompt = (diffContent, options) =>
-  quick.commit(diffContent, {
+  cook({
     basePath: __dirname,
+    template: 'commit',
     overridePaths: [options.overridePath || './'],
     overrides: options.overrides || false,
-    userDirection: options.userDirection,
-    directories: options.directories,
+    content: [
+      { content: options.userDirection, title: 'User Direction' },
+      { content: diffContent, title: 'Diff' }
+    ],
+    context: [
+      { directories: options.directories }
+    ]
   });
 ```
 
@@ -227,14 +221,15 @@ const createCommitPrompt = (diffContent, options) =>
 When using templates, the system resolves content in this priority order:
 
 1. **User-provided content** (highest priority)
-2. **Template defaults** (configured via `configureTemplates`)
+2. **Template defaults** (configured via `registerTemplates`)
 3. **Built-in defaults** (fallback)
 
 ```typescript
 // Template provides: persona + instructions
 // User adds: custom content + context
-const prompt = await commit({
+const prompt = await cook({
   basePath: __dirname,
+  template: 'commit',
   // Template automatically includes persona & instructions
   content: [
     { content: userDirection, title: 'User Direction' }, // User content
@@ -255,7 +250,7 @@ Configure templates in your application initialization, then use simple template
 
 ### 2. **Use Meaningful Template Names**
 ```typescript
-configureTemplates({
+registerTemplates({
   'git-commit': { /* ... */ },      // Clear purpose
   'release-notes': { /* ... */ },   // Specific use case
   'code-review': { /* ... */ },     // Obvious workflow
@@ -266,10 +261,12 @@ configureTemplates({
 Templates work seamlessly with the override system:
 
 ```typescript
-const prompt = await quick.commit(diffContent, {
+const prompt = await cook({
   basePath: __dirname,
+  template: 'commit',
   overridePaths: ['./project-overrides', '~/personal'],
-  overrides: true
+  overrides: true,
+  content: [{ content: diffContent, title: 'Diff' }]
 });
 // Template files + Override files + User content = Perfect prompt!
 ```
@@ -278,7 +275,7 @@ const prompt = await quick.commit(diffContent, {
 Build complex templates from simpler ones:
 
 ```typescript
-configureTemplates({
+registerTemplates({
   // Base template
   'base-dev': {
     persona: { path: 'personas/developer.md' }
