@@ -8,6 +8,7 @@ import { DEFAULT_LOGGER, wrapLogger } from "./logger";
 import { Content, Context, createPrompt, createSection, Instruction, Loader, Override, Parser, Prompt, Section, Weighted } from "./riotprompt";
 import { type TokenBudgetConfig } from "./token-budget";
 import { Tool, ToolRegistry } from "./tools";
+import { StrategyExecutor, type IterationStrategy, type LLMClient, type StrategyResult } from "./iteration-strategy";
 
 // ===== CONFIGURATION SCHEMAS =====
 
@@ -491,6 +492,27 @@ export const recipe = (basePath: string) => {
                 return registry;
             }
             return undefined;
+        },
+        executeWith: async (
+            llm: LLMClient,
+            strategy: IterationStrategy,
+            tokenBudget?: TokenBudgetConfig
+        ): Promise<StrategyResult> => {
+            const prompt = await cook(config);
+            const conversation = ConversationBuilder.create({ model: 'gpt-4o' as Model }, config.logger);
+            conversation.fromPrompt(prompt, 'gpt-4o' as Model);
+
+            if (tokenBudget) {
+                conversation.withTokenBudget(tokenBudget);
+            }
+
+            const registry = builder.getToolRegistry();
+            if (!registry) {
+                throw new Error('Tools must be configured to use executeWith');
+            }
+
+            const executor = new StrategyExecutor(llm, config.logger);
+            return executor.execute(conversation, registry, strategy);
         },
     };
 

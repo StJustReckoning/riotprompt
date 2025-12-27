@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { Model } from "./chat";
 import { ContextManager, type DynamicContentItem } from "./context-manager";
+import { ConversationLogger, type LogConfig } from "./conversation-logger";
 import { Content } from "./items/content";
 import { Context } from "./items/context";
 import { Instruction } from "./items/instruction";
 import { Section } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
+import { MessageBuilder } from "./message-builder";
 import { Prompt } from "./prompt";
 import * as Formatter from "./formatter";
 import { TokenBudgetManager, type TokenBudgetConfig, type TokenUsage, type CompressionStrategy } from "./token-budget";
@@ -146,6 +148,7 @@ export class ConversationBuilder {
     private config: ConversationBuilderConfig;
     private logger: any;
     private budgetManager?: TokenBudgetManager;
+    private conversationLogger?: ConversationLogger;
 
     private constructor(config: ConversationBuilderConfig, logger?: any) {
         this.config = ConversationBuilderConfigSchema.parse(config) as ConversationBuilderConfig;
@@ -592,6 +595,88 @@ export class ConversationBuilder {
         };
     }
 
+    // ===== SEMANTIC MESSAGE METHODS (Feature 5) =====
+
+    /**
+     * Add a system message using semantic builder
+     */
+    asSystem(content: string | Section<Instruction>): this {
+        const message = MessageBuilder.system(this.logger)
+            .withContent(content)
+            .withFormatter(this.config.formatter || Formatter.create())
+            .buildForModel(this.config.model);
+
+        this.state.messages.push(message);
+        this.updateMetadata();
+        return this;
+    }
+
+    /**
+     * Add a user message using semantic builder
+     */
+    asUser(content: string | Section<Content>): this {
+        const message = MessageBuilder.user(this.logger)
+            .withContent(content)
+            .withFormatter(this.config.formatter || Formatter.create())
+            .buildForModel(this.config.model);
+
+        // Check budget if enabled
+        if (this.budgetManager) {
+            if (!this.budgetManager.canAddMessage(message, this.state.messages)) {
+                this.logger.warn('Budget exceeded, compressing conversation');
+                this.state.messages = this.budgetManager.compress(this.state.messages);
+            }
+        }
+
+        this.state.messages.push(message);
+        this.updateMetadata();
+        return this;
+    }
+
+    /**
+     * Add an assistant message using semantic builder
+     */
+    asAssistant(content: string | null, toolCalls?: ToolCall[]): this {
+        const builder = MessageBuilder.assistant(this.logger)
+            .withFormatter(this.config.formatter || Formatter.create());
+
+        if (content) {
+            builder.withContent(content);
+        }
+
+        if (toolCalls) {
+            builder.withToolCalls(toolCalls);
+        }
+
+        const message = builder.buildForModel(this.config.model);
+
+        if (toolCalls) {
+            this.state.metadata.toolCallCount += toolCalls.length;
+        }
+
+        this.state.messages.push(message);
+        this.updateMetadata();
+        return this;
+    }
+
+    /**
+     * Add a tool result message using semantic builder
+     */
+    asTool(callId: string, result: any, metadata?: Record<string, any>): this {
+        const builder = MessageBuilder.tool(callId, this.logger)
+            .withResult(result);
+
+        if (metadata) {
+            builder.withMetadata(metadata);
+        }
+
+        const message = builder.buildForModel(this.config.model);
+
+        this.state.messages.push(message);
+        this.updateMetadata();
+        return this;
+    }
+
     /**
      * Configure token budget
      */
@@ -599,6 +684,37 @@ export class ConversationBuilder {
         this.logger.debug('Configuring token budget', { max: config.max });
         this.budgetManager = new TokenBudgetManager(config, this.config.model, this.logger);
         return this;
+    }
+
+    /**
+     * Configure conversation logging
+     */
+    withLogging(config: LogConfig): this {
+        this.logger.debug('Configuring conversation logging');
+        this.conversationLogger = new ConversationLogger(config, this.logger);
+        this.conversationLogger.onConversationStart({
+            model: this.config.model,
+            startTime: new Date(),
+        });
+        return this;
+    }
+
+    /**
+     * Save conversation log
+     */
+    async saveLog(): Promise<string> {
+        if (!this.conversationLogger) {
+            throw new Error('Logging not enabled. Call withLogging() first.');
+        }
+
+        this.conversationLogger.onConversationEnd({
+            totalMessages: this.state.messages.length,
+            toolCallsExecuted: this.state.metadata.toolCallCount,
+            iterations: 0,
+            success: true,
+        });
+
+        return await this.conversationLogger.save();
     }
 
     /**

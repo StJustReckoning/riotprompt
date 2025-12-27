@@ -23,9 +23,17 @@ export { cook, recipe, registerTemplates, getTemplates, clearTemplates, generate
 export { ConversationBuilder } from "./conversation";
 export { ContextManager } from "./context-manager";
 export { TokenCounter, TokenBudgetManager } from "./token-budget";
+export { MessageBuilder, MessageTemplates } from "./message-builder";
+export { ConversationLogger, ConversationReplayer } from "./conversation-logger";
 
 // ===== TOOL INTEGRATION =====
 export { ToolRegistry } from "./tools";
+
+// ===== ITERATION STRATEGIES =====
+export { StrategyExecutor, IterationStrategyFactory } from "./iteration-strategy";
+
+// ===== OBSERVABILITY =====
+export { MetricsCollector, ReflectionReportGenerator } from "./reflection";
 
 // Export types
 export type { Content } from "./items/content";
@@ -59,6 +67,44 @@ export type {
     CompressionStats,
     CompressionStrategy
 } from "./token-budget";
+export type {
+    SemanticRole,
+    MessageMetadata
+} from "./message-builder";
+export type {
+    IterationStrategy,
+    StrategyPhase,
+    StrategyState,
+    StrategyResult,
+    StrategyContext,
+    PhaseResult,
+    ToolResult,
+    LLMClient,
+    ToolUsagePolicy,
+    Insight
+} from "./iteration-strategy";
+export type {
+    ReflectionReport,
+    ReflectionConfig,
+    AgenticExecutionMetrics,
+    ToolExecutionMetric,
+    ToolStats,
+    Recommendation,
+    ToolEffectivenessAnalysis,
+    PerformanceInsights,
+    QualityAssessment
+} from "./reflection";
+export type {
+    LogConfig,
+    LogFormat,
+    LoggedConversation,
+    ConversationLogMetadata,
+    LoggedMessage,
+    ToolCallLog,
+    ConversationSummary,
+    ReplayOptions,
+    ReplayResult
+} from "./conversation-logger";
 export type {
     Tool,
     ToolParameter,
