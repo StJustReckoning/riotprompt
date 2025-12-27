@@ -1,9 +1,14 @@
 import path from "path";
 import { z } from "zod";
+import { Model } from "./chat";
+import { ConversationBuilder } from "./conversation";
 import { ParametersSchema } from "./items/parameters";
 import { SectionOptions } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
 import { Content, Context, createPrompt, createSection, Instruction, Loader, Override, Parser, Prompt, Section, Weighted } from "./riotprompt";
+import { type TokenBudgetConfig } from "./token-budget";
+import { Tool, ToolRegistry } from "./tools";
+import { StrategyExecutor, type IterationStrategy, type LLMClient, type StrategyResult } from "./iteration-strategy";
 
 // ===== CONFIGURATION SCHEMAS =====
 
@@ -43,6 +48,20 @@ const RecipeConfigSchema = z.object({
     // Templates and inheritance
     extends: z.string().optional(), // Extend another recipe
     template: z.string().optional(), // Generic template name
+
+    // Tool integration
+    tools: z.any().optional(), // Tool[] | ToolRegistry
+    toolGuidance: z.union([
+        z.enum(['auto', 'minimal', 'detailed']),
+        z.object({
+            strategy: z.enum(['adaptive', 'prescriptive', 'minimal']),
+            includeExamples: z.boolean().optional(),
+            explainWhenToUse: z.boolean().optional(),
+            includeCategories: z.boolean().optional(),
+            customInstructions: z.string().optional(),
+        })
+    ]).optional(),
+    toolCategories: z.array(z.string()).optional(),
 });
 
 type RecipeConfig = z.infer<typeof RecipeConfigSchema>;
@@ -50,11 +69,21 @@ type ContentItem = z.infer<typeof ContentItemSchema>;
 
 // ===== CONFIGURABLE TEMPLATE SYSTEM =====
 
+export interface ToolGuidanceConfig {
+    strategy: 'adaptive' | 'prescriptive' | 'minimal';
+    includeExamples?: boolean;
+    explainWhenToUse?: boolean;
+    includeCategories?: boolean;
+    customInstructions?: string;
+}
+
 export interface TemplateConfig {
     persona?: ContentItem;
     instructions?: ContentItem[];
     content?: ContentItem[];
     context?: ContentItem[];
+    tools?: Tool[] | ToolRegistry;
+    toolGuidance?: Partial<ToolGuidanceConfig> | 'auto' | 'minimal' | 'detailed';
 }
 
 // User-customizable template registry
@@ -62,7 +91,7 @@ let TEMPLATES: Record<string, TemplateConfig> = {};
 
 /**
  * Register custom templates with the recipes system
- * 
+ *
  * @example
  * ```typescript
  * // Register your own templates
@@ -92,6 +121,112 @@ export const getTemplates = (): Record<string, TemplateConfig> => ({ ...TEMPLATE
  */
 export const clearTemplates = (): void => {
     TEMPLATES = {};
+};
+
+// ===== TOOL GUIDANCE GENERATION =====
+
+/**
+ * Generate tool guidance instructions based on strategy
+ */
+export const generateToolGuidance = (
+    tools: Tool[],
+    guidance: ToolGuidanceConfig | 'auto' | 'minimal' | 'detailed'
+): string => {
+    if (tools.length === 0) {
+        return '';
+    }
+
+    // Normalize guidance config
+    let config: ToolGuidanceConfig;
+    if (typeof guidance === 'string') {
+        switch (guidance) {
+            case 'auto':
+            case 'detailed':
+                config = { strategy: 'adaptive', includeExamples: true, explainWhenToUse: true };
+                break;
+            case 'minimal':
+                config = { strategy: 'minimal', includeExamples: false, explainWhenToUse: false };
+                break;
+            default:
+                config = { strategy: 'adaptive' };
+        }
+    } else {
+        config = guidance;
+    }
+
+    let output = '## Available Tools\n\n';
+
+    if (config.customInstructions) {
+        output += config.customInstructions + '\n\n';
+    }
+
+    // Group by category if enabled
+    if (config.includeCategories) {
+        const categorized = new Map<string, Tool[]>();
+        tools.forEach(tool => {
+            const category = tool.category || 'General';
+            if (!categorized.has(category)) {
+                categorized.set(category, []);
+            }
+            categorized.get(category)!.push(tool);
+        });
+
+        categorized.forEach((categoryTools, category) => {
+            output += `### ${category}\n\n`;
+            categoryTools.forEach(tool => {
+                output += formatToolGuidance(tool, config);
+            });
+        });
+    } else {
+        tools.forEach(tool => {
+            output += formatToolGuidance(tool, config);
+        });
+    }
+
+    return output;
+};
+
+const formatToolGuidance = (tool: Tool, config: ToolGuidanceConfig): string => {
+    let output = `**${tool.name}**`;
+
+    if (tool.cost) {
+        output += ` _(${tool.cost})_`;
+    }
+
+    output += `\n${tool.description}\n\n`;
+
+    if (config.strategy !== 'minimal') {
+        // Parameters
+        const required = tool.parameters.required || [];
+        const paramList = Object.entries(tool.parameters.properties)
+            .map(([name, param]) => {
+                const isRequired = required.includes(name);
+                return `- \`${name}\`${isRequired ? ' (required)' : ''}: ${param.description}`;
+            })
+            .join('\n');
+
+        if (paramList) {
+            output += 'Parameters:\n' + paramList + '\n\n';
+        }
+
+        // When to use (adaptive and prescriptive)
+        if (config.explainWhenToUse && (config.strategy === 'adaptive' || config.strategy === 'prescriptive')) {
+            output += `**When to use:** ${tool.description}\n\n`;
+        }
+
+        // Examples
+        if (config.includeExamples && tool.examples && tool.examples.length > 0) {
+            output += '**Examples:**\n';
+            tool.examples.forEach(example => {
+                output += `- ${example.scenario}: \`${tool.name}(${JSON.stringify(example.params)})\`\n`;
+            });
+            output += '\n';
+        }
+    }
+
+    output += '---\n\n';
+
+    return output;
 };
 
 // ===== CORE RECIPE ENGINE =====
@@ -170,6 +305,24 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
             parameters: finalConfig.parameters,
             logger
         });
+    }
+
+    // Generate tool guidance if tools are provided
+    if (finalConfig.tools) {
+        const tools: Tool[] = Array.isArray(finalConfig.tools)
+            ? finalConfig.tools
+            : finalConfig.tools.getAll();
+
+        // Filter by categories if specified
+        const filteredTools: Tool[] = finalConfig.toolCategories
+            ? tools.filter((tool: Tool) => finalConfig.toolCategories!.includes(tool.category || ''))
+            : tools;
+
+        if (filteredTools.length > 0 && finalConfig.toolGuidance) {
+            const guidance = generateToolGuidance(filteredTools, finalConfig.toolGuidance);
+            const toolSection = await parser.parse(guidance, { parameters: finalConfig.parameters });
+            instructionSection.add(toolSection);
+        }
     }
 
     // Process content
@@ -301,11 +454,70 @@ export const recipe = (basePath: string) => {
             config.overridePaths = paths;
             return builder;
         },
+        tools: (tools: Tool[] | ToolRegistry) => {
+            config.tools = tools;
+            return builder;
+        },
+        toolRegistry: (registry: ToolRegistry) => {
+            config.tools = registry;
+            return builder;
+        },
+        toolGuidance: (guidance: ToolGuidanceConfig | 'auto' | 'minimal' | 'detailed') => {
+            config.toolGuidance = guidance as any;
+            return builder;
+        },
+        toolCategories: (categories: string[]) => {
+            config.toolCategories = categories;
+            return builder;
+        },
         cook: () => cook(config),
+        buildConversation: async (model: Model, tokenBudget?: TokenBudgetConfig) => {
+            const prompt = await cook(config);
+            const conversation = ConversationBuilder.create({ model }, config.logger);
+            conversation.fromPrompt(prompt, model);
+
+            // Apply token budget if provided
+            if (tokenBudget) {
+                conversation.withTokenBudget(tokenBudget);
+            }
+
+            return conversation;
+        },
+        getToolRegistry: (): ToolRegistry | undefined => {
+            if (config.tools instanceof ToolRegistry) {
+                return config.tools;
+            } else if (Array.isArray(config.tools)) {
+                const registry = ToolRegistry.create({}, config.logger);
+                registry.registerAll(config.tools);
+                return registry;
+            }
+            return undefined;
+        },
+        executeWith: async (
+            llm: LLMClient,
+            strategy: IterationStrategy,
+            tokenBudget?: TokenBudgetConfig
+        ): Promise<StrategyResult> => {
+            const prompt = await cook(config);
+            const conversation = ConversationBuilder.create({ model: 'gpt-4o' as Model }, config.logger);
+            conversation.fromPrompt(prompt, 'gpt-4o' as Model);
+
+            if (tokenBudget) {
+                conversation.withTokenBudget(tokenBudget);
+            }
+
+            const registry = builder.getToolRegistry();
+            if (!registry) {
+                throw new Error('Tools must be configured to use executeWith');
+            }
+
+            const executor = new StrategyExecutor(llm, config.logger);
+            return executor.execute(conversation, registry, strategy);
+        },
     };
 
     return builder;
 };
 
 // Export types for external use
-export type { RecipeConfig, ContentItem }; 
+export type { RecipeConfig, ContentItem };

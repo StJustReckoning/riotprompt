@@ -64,6 +64,15 @@ describe('Loader', () => {
         mockIsFile.mockImplementation(() => Promise.resolve(false));
         mockExists.mockImplementation(() => Promise.resolve(false));
 
+        // Setup default mock for createSection to return an object with add method
+        mockCreateSection.mockImplementation((options: any) => {
+            return {
+                add: vi.fn(),
+                parameters: options.parameters || {},
+                items: []
+            };
+        });
+
         // Dynamically import the modules after mocking
         Storage = await import('../src/util/storage');
         loaderModule = await import('../src/loader');

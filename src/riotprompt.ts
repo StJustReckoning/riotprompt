@@ -17,7 +17,23 @@ export * as Builder from "./builder";
 
 // ===== RECIPES SYSTEM =====
 export * as Recipes from "./recipes";
-export { cook, recipe, registerTemplates, getTemplates, clearTemplates } from "./recipes";
+export { cook, recipe, registerTemplates, getTemplates, clearTemplates, generateToolGuidance } from "./recipes";
+
+// ===== CONVERSATION MANAGEMENT =====
+export { ConversationBuilder } from "./conversation";
+export { ContextManager } from "./context-manager";
+export { TokenCounter, TokenBudgetManager } from "./token-budget";
+export { MessageBuilder, MessageTemplates } from "./message-builder";
+export { ConversationLogger, ConversationReplayer } from "./conversation-logger";
+
+// ===== TOOL INTEGRATION =====
+export { ToolRegistry } from "./tools";
+
+// ===== ITERATION STRATEGIES =====
+export { StrategyExecutor, IterationStrategyFactory } from "./iteration-strategy";
+
+// ===== OBSERVABILITY =====
+export { MetricsCollector, ReflectionReportGenerator } from "./reflection";
 
 // Export types
 export type { Content } from "./items/content";
@@ -31,4 +47,72 @@ export type { Prompt } from "./prompt";
 export type { FormatOptions, SectionSeparator, SectionTitleProperty } from "./formatter";
 export type { Model, Request } from "./chat";
 export type { Logger } from "./logger";
-export type { RecipeConfig, ContentItem, TemplateConfig } from "./recipes";
+export type { RecipeConfig, ContentItem, TemplateConfig, ToolGuidanceConfig } from "./recipes";
+export type {
+    ConversationMessage,
+    ConversationBuilderConfig,
+    ConversationMetadata,
+    ConversationState,
+    InjectOptions,
+    ToolCall
+} from "./conversation";
+export type {
+    DynamicContentItem,
+    TrackedContextItem,
+    ContextStats
+} from "./context-manager";
+export type {
+    TokenUsage,
+    TokenBudgetConfig,
+    CompressionStats,
+    CompressionStrategy
+} from "./token-budget";
+export type {
+    SemanticRole,
+    MessageMetadata
+} from "./message-builder";
+export type {
+    IterationStrategy,
+    StrategyPhase,
+    StrategyState,
+    StrategyResult,
+    StrategyContext,
+    PhaseResult,
+    ToolResult,
+    LLMClient,
+    ToolUsagePolicy,
+    Insight
+} from "./iteration-strategy";
+export type {
+    ReflectionReport,
+    ReflectionConfig,
+    AgenticExecutionMetrics,
+    ToolExecutionMetric,
+    ToolStats,
+    Recommendation,
+    ToolEffectivenessAnalysis,
+    PerformanceInsights,
+    QualityAssessment
+} from "./reflection";
+export type {
+    LogConfig,
+    LogFormat,
+    LoggedConversation,
+    ConversationLogMetadata,
+    LoggedMessage,
+    ToolCallLog,
+    ConversationSummary,
+    ReplayOptions,
+    ReplayResult
+} from "./conversation-logger";
+export type {
+    Tool,
+    ToolParameter,
+    ToolContext,
+    ToolExample,
+    ToolCost,
+    OpenAITool,
+    AnthropicTool,
+    ToolDefinition,
+    ToolUsageStats
+} from "./tools";
