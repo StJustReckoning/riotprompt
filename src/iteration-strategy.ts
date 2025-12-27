@@ -41,6 +41,7 @@ export interface StrategyState {
     insights: Insight[];
     findings: any[];
     errors: Error[];
+    toolFailures: Map<string, number>;  // Track consecutive failures per tool
     [key: string]: any;
 }
 
@@ -114,6 +115,7 @@ export interface StrategyPhase {
     earlyExit?: boolean;
     requireFinalAnswer?: boolean;
     adaptiveDepth?: boolean;
+    maxConsecutiveToolFailures?: number;  // Circuit breaker threshold (default: 3)
     continueIf?: (state: StrategyState) => boolean;
     skipIf?: (state: StrategyState) => boolean;
 }
@@ -211,6 +213,7 @@ export class StrategyExecutor {
             insights: [],
             findings: [],
             errors: [],
+            toolFailures: new Map<string, number>(),
         };
 
         this.logger.info('Starting strategy execution', { strategy: strategy.name });
@@ -253,11 +256,6 @@ export class StrategyExecutor {
                 );
 
                 phaseResults.push(phaseResult);
-
-                // Track iteration for metrics
-                if (this.metricsCollector) {
-                    this.metricsCollector.incrementIteration();
-                }
 
                 await strategy.onPhaseComplete?.(phaseResult, state);
 
@@ -379,6 +377,11 @@ export class StrategyExecutor {
         for (let i = 0; i < phase.maxIterations; i++) {
             state.iteration++;
 
+            // Track iteration for metrics
+            if (this.metricsCollector) {
+                this.metricsCollector.incrementIteration();
+            }
+
             this.logger.debug('Iteration', { phase: phase.name, iteration: i + 1 });
 
             // Check iteration hook
@@ -415,6 +418,23 @@ export class StrategyExecutor {
                         continue;
                     }
 
+                    // Circuit breaker: Check if tool has exceeded failure threshold
+                    const maxFailures = phase.maxConsecutiveToolFailures ?? 3;
+                    const consecutiveFailures = state.toolFailures.get(toolCall.function.name) || 0;
+                    if (consecutiveFailures >= maxFailures) {
+                        this.logger.warn('Tool circuit breaker triggered', {
+                            tool: toolCall.function.name,
+                            failures: consecutiveFailures
+                        });
+                        conversation.asTool(toolCall.id, {
+                            error: `Tool temporarily disabled due to ${consecutiveFailures} consecutive failures`
+                        }, {
+                            success: false,
+                            circuitBreakerTriggered: true
+                        });
+                        continue;
+                    }
+
                     // Check tool call hook
                     const toolAction = await strategy.onToolCall?.(toolCall, state);
                     if (toolAction === 'skip') {
@@ -424,9 +444,25 @@ export class StrategyExecutor {
                     // Execute tool
                     const toolStart = Date.now();
                     try {
+                        // Parse tool arguments with error handling
+                        let toolArgs: any;
+                        try {
+                            toolArgs = JSON.parse(toolCall.function.arguments);
+                        } catch (parseError) {
+                            const error = new Error(
+                                `Invalid JSON in tool arguments for ${toolCall.function.name}: ${
+                                    parseError instanceof Error ? parseError.message : String(parseError)
+                                }`
+                            );
+                            if (parseError instanceof Error) {
+                                (error as any).cause = parseError; // Preserve original error
+                            }
+                            throw error;
+                        }
+
                         const result = await tools.execute(
                             toolCall.function.name,
-                            JSON.parse(toolCall.function.arguments)
+                            toolArgs
                         );
 
                         const toolDuration = Date.now() - toolStart;
@@ -444,6 +480,9 @@ export class StrategyExecutor {
                         });
 
                         state.toolCallsExecuted++;
+
+                        // Reset failure counter on success
+                        state.toolFailures.set(toolCall.function.name, 0);
 
                         // Record metrics
                         if (this.metricsCollector) {
@@ -478,6 +517,10 @@ export class StrategyExecutor {
                         });
 
                         state.errors.push(error as Error);
+
+                        // Increment failure counter for circuit breaker
+                        const failures = (state.toolFailures.get(toolCall.function.name) || 0) + 1;
+                        state.toolFailures.set(toolCall.function.name, failures);
 
                         // Record metrics
                         if (this.metricsCollector) {

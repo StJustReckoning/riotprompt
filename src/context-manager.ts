@@ -92,11 +92,18 @@ export class ContextManager {
     }
 
     /**
-     * Track a context item
+     * Track a context item (with deduplication by content hash for items without ID)
      */
     track(item: DynamicContentItem, position: number): void {
-        const id = item.id || this.generateId();
         const hash = this.hashContent(item.content);
+
+        // If item has no ID and we already have this content hash, skip tracking
+        if (!item.id && this.hashes.has(hash)) {
+            this.logger.debug('Skipping duplicate context item by hash', { hash });
+            return;
+        }
+
+        const id = item.id || this.generateId();
 
         const trackedItem: TrackedContextItem = {
             ...item,
@@ -131,8 +138,18 @@ export class ContextManager {
 
     /**
      * Check if similar content exists (fuzzy match)
+     * Uses similarity threshold to avoid overly aggressive deduplication
      */
-    hasSimilarContent(content: string): boolean {
+    hasSimilarContent(content: string, similarityThreshold: number = 0.9): boolean {
+        // Warn if checking against a large number of items (performance consideration)
+        const MAX_ITEMS_WARNING = 1000;
+        if (this.items.size > MAX_ITEMS_WARNING) {
+            this.logger.warn('Large number of context items, similarity check may be slow', {
+                count: this.items.size,
+                threshold: MAX_ITEMS_WARNING
+            });
+        }
+
         const normalized = this.normalizeContent(content);
 
         for (const item of this.items.values()) {
@@ -143,9 +160,18 @@ export class ContextManager {
                 return true;
             }
 
-            // Substring match (one contains the other)
-            if (normalized.includes(itemNormalized) || itemNormalized.includes(normalized)) {
-                return true;
+            // Calculate similarity ratio (Jaccard-like)
+            const longer = normalized.length > itemNormalized.length ? normalized : itemNormalized;
+            const shorter = normalized.length <= itemNormalized.length ? normalized : itemNormalized;
+
+            // Only consider substring match if the shorter is at least 90% of longer
+            const lengthRatio = shorter.length / longer.length;
+
+            if (lengthRatio >= similarityThreshold) {
+                // Check if one is contained in the other
+                if (longer.includes(shorter)) {
+                    return true;
+                }
             }
         }
 

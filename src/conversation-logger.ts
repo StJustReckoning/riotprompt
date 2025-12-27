@@ -147,6 +147,8 @@ export class ConversationLogger {
     private startTime: Date;
     private logger: any;
     private messageIndex: number;
+    private cachedOutputPath?: string;
+    private writeQueue: Promise<void> = Promise.resolve();
 
     constructor(config: LogConfig, logger?: any) {
         this.config = {
@@ -185,6 +187,9 @@ export class ConversationLogger {
             startTime: this.startTime,
         };
 
+        // Reset cached output path to prevent file collision if logger is reused
+        this.cachedOutputPath = undefined;
+
         this.logger.debug('Conversation logging started', { id: this.conversationId });
     }
 
@@ -211,9 +216,18 @@ export class ConversationLogger {
 
         this.messages.push(loggedMessage);
 
-        // For JSONL format, append immediately
+        // For JSONL format, append immediately with write queue
         if (this.config.format === 'jsonl') {
-            this.appendToJSONL(loggedMessage).catch(this.config.onError);
+            this.writeQueue = this.writeQueue
+                .then(() => this.appendToJSONL(loggedMessage))
+                .catch((error) => {
+                    this.logger.error('Failed to write JSONL message', { error });
+                    try {
+                        this.config.onError?.(error);
+                    } catch (callbackError) {
+                        this.logger.error('onError callback failed', { callbackError });
+                    }
+                });
         }
     }
 
@@ -317,9 +331,13 @@ export class ConversationLogger {
     }
 
     /**
-     * Get output file path
+     * Get output file path (cached for JSONL to avoid recalculation)
      */
     private async getOutputPath(): Promise<string> {
+        if (this.cachedOutputPath) {
+            return this.cachedOutputPath;
+        }
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = this.config.filenameTemplate
             .replace('{timestamp}', timestamp)
@@ -331,6 +349,11 @@ export class ConversationLogger {
 
         // Ensure directory exists
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
+
+        // Cache path for JSONL format to ensure consistent file writes
+        if (this.config.format === 'jsonl') {
+            this.cachedOutputPath = fullPath;
+        }
 
         return fullPath;
     }
@@ -577,12 +600,24 @@ export class ConversationReplayer {
         for (const msg of this.conversation.messages) {
             if (msg.tool_calls) {
                 for (const call of msg.tool_calls) {
+                    // Parse arguments with error handling
+                    let parsedArgs: any;
+                    try {
+                        parsedArgs = JSON.parse(call.function.arguments);
+                    } catch (error) {
+                        this.logger.warn('Failed to parse tool call arguments', {
+                            callId: call.id,
+                            error: error instanceof Error ? error.message : String(error)
+                        });
+                        parsedArgs = { __parse_error: true, raw: call.function.arguments };
+                    }
+
                     toolCalls.push({
                         callId: call.id,
                         toolName: call.function.name,
                         timestamp: msg.timestamp,
                         iteration: 0,  // Would need to be calculated
-                        arguments: JSON.parse(call.function.arguments),
+                        arguments: parsedArgs,
                         result: null,  // Would need to find corresponding tool message
                         duration: 0,
                         success: true,

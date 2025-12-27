@@ -2,6 +2,7 @@ import { encoding_for_model, Tiktoken, TiktokenModel } from 'tiktoken';
 import type { ConversationMessage } from './conversation';
 import { Model } from './chat';
 import { DEFAULT_LOGGER, wrapLogger } from './logger';
+import { getEncoding } from './model-config';
 
 // ===== TYPE DEFINITIONS =====
 
@@ -179,20 +180,18 @@ export class TokenCounter {
     }
 
     /**
-     * Map RiotPrompt model to Tiktoken model
+     * Map RiotPrompt model to Tiktoken model using model registry
      */
     private mapToTiktokenModel(model: Model): TiktokenModel {
-        switch (model) {
+        const encoding = getEncoding(model);
+
+        // Map our encoding types to tiktoken models
+        switch (encoding) {
             case 'gpt-4o':
-            case 'gpt-4o-mini':
+            case 'o200k_base':
                 return 'gpt-4o';
-            case 'o1-preview':
-            case 'o1-mini':
-            case 'o1':
-            case 'o3-mini':
-            case 'o1-pro':
-                // O1 models use gpt-4o tokenization
-                return 'gpt-4o';
+            case 'cl100k_base':
+                return 'gpt-3.5-turbo';
             default:
                 return 'gpt-4o';
         }
@@ -402,13 +401,14 @@ export class TokenBudgetManager {
     }
 
     /**
-     * Compress using FIFO (remove oldest first)
+     * Compress using FIFO (remove oldest first) - optimized with Set
      */
     private compressFIFO(
         messages: ConversationMessage[],
         targetTokens: number
     ): ConversationMessage[] {
         const preserved: ConversationMessage[] = [];
+        const preservedSet = new Set<ConversationMessage>();
         let totalTokens = 0;
 
         // Always preserve system messages if configured
@@ -416,6 +416,7 @@ export class TokenBudgetManager {
         if (this.config.preserveSystem) {
             for (const msg of systemMessages) {
                 preserved.push(msg);
+                preservedSet.add(msg);
                 totalTokens += this.counter.countMessage(msg);
             }
         }
@@ -424,10 +425,11 @@ export class TokenBudgetManager {
         const recentCount = this.config.preserveRecent ?? 3;
         const recentMessages = messages.slice(-recentCount).filter(m => m.role !== 'system');
         for (const msg of recentMessages) {
-            if (!preserved.includes(msg)) {
+            if (!preservedSet.has(msg)) {
                 const tokens = this.counter.countMessage(msg);
                 if (totalTokens + tokens <= targetTokens) {
                     preserved.push(msg);
+                    preservedSet.add(msg);
                     totalTokens += tokens;
                 }
             }
@@ -435,7 +437,7 @@ export class TokenBudgetManager {
 
         // Add older messages if space available
         const otherMessages = messages.filter(
-            m => !preserved.includes(m) && m.role !== 'system'
+            m => !preservedSet.has(m) && m.role !== 'system'
         );
 
         for (let i = otherMessages.length - 1; i >= 0; i--) {
@@ -444,14 +446,15 @@ export class TokenBudgetManager {
 
             if (totalTokens + tokens <= targetTokens) {
                 preserved.unshift(msg);
+                preservedSet.add(msg);
                 totalTokens += tokens;
             } else {
                 break;
             }
         }
 
-        // Sort to maintain conversation order
-        return messages.filter(m => preserved.includes(m));
+        // Sort to maintain conversation order - use Set for O(1) lookup
+        return messages.filter(m => preservedSet.has(m));
     }
 
     /**
@@ -470,14 +473,12 @@ export class TokenBudgetManager {
 
         // Mid phase: moderate compression
         if (messageCount <= 15) {
-            // Use FIFO but preserve more recent messages
-            const modifiedConfig = { ...this.config, preserveRecent: 5 };
-            const tempManager = new TokenBudgetManager(
-                modifiedConfig,
-                'gpt-4o',  // Model doesn't matter here
-                this.logger
-            );
-            return tempManager.compressFIFO(messages, targetTokens);
+            // Temporarily modify preserveRecent, then restore
+            const originalPreserveRecent = this.config.preserveRecent;
+            this.config.preserveRecent = 5;
+            const result = this.compressFIFO(messages, targetTokens);
+            this.config.preserveRecent = originalPreserveRecent;
+            return result;
         }
 
         // Late phase: aggressive compression (priority-based)

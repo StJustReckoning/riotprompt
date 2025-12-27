@@ -121,7 +121,9 @@ export const create = (overrideOptions: OptionsParam = {}): Instance => {
         }
 
         // Apply appends in reverse order (furthest layers first, then closest)
-        for (const append of appends.reverse()) {
+        // Create a copy to avoid mutating the original array
+        const reversedAppends = [...appends].reverse();
+        for (const append of reversedAppends) {
             logger.silly('Append found, adding to content from file %s', append);
             finalSection = finalSection.append(append);
         }

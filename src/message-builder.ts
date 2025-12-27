@@ -5,6 +5,7 @@ import { Section } from "./items/section";
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
 import type { ConversationMessage, ToolCall } from "./conversation";
 import * as Formatter from "./formatter";
+import { getPersonaRole as getPersonaRoleFromRegistry } from "./model-config";
 
 // ===== TYPE DEFINITIONS =====
 
@@ -239,8 +240,9 @@ export class MessageBuilder {
 
         // Handle model-specific role requirements
         if (this.semanticRole === 'system') {
-            // O1 models use 'developer' instead of 'system'
-            if (model.startsWith('o1') || model.startsWith('o3') || model === 'o1-pro') {
+            // Use model registry to determine correct role
+            const personaRole = getPersonaRoleFromRegistry(model);
+            if (personaRole === 'developer') {
                 message.role = 'developer' as any;
             }
         }

@@ -266,10 +266,10 @@ export class MetricsCollector {
         // Calculate token usage if model provided
         let tokenUsage: TokenUsageMetrics | undefined;
         if (model) {
+            let counter: TokenCounter | undefined;
             try {
-                const counter = new TokenCounter(model);
+                counter = new TokenCounter(model);
                 const total = counter.countConversation(messages);
-                counter.dispose();
 
                 tokenUsage = {
                     total,
@@ -280,6 +280,9 @@ export class MetricsCollector {
                 };
             } catch (error) {
                 this.logger.warn('Could not calculate token usage', { error });
+            } finally {
+                // Always dispose of the counter to prevent resource leaks
+                counter?.dispose();
             }
         }
 
