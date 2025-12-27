@@ -88,7 +88,7 @@ export const create = <T extends Weighted>(
 
         if (Array.isArray(item)) {
             item.forEach((item) => {
-                append(item);
+                append(item, options);  // Propagate options to array items
             });
         } else {
             if (typeof item === 'string') {
@@ -106,7 +106,7 @@ export const create = <T extends Weighted>(
 
         if (Array.isArray(item)) {
             item.forEach((item) => {
-                prepend(item);
+                prepend(item, options);  // Propagate options to array items
             });
         } else {
             if (typeof item === 'string') {
@@ -124,7 +124,7 @@ export const create = <T extends Weighted>(
 
         if (Array.isArray(item)) {
             item.forEach((item) => {
-                insert(index, item);
+                insert(index, item, options);  // Propagate options to array items
             });
         } else {
             if (typeof item === 'string') {

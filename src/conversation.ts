@@ -255,6 +255,13 @@ export class ConversationBuilder {
             if (!this.budgetManager.canAddMessage(message, this.state.messages)) {
                 this.logger.warn('Budget exceeded, compressing conversation');
                 this.state.messages = this.budgetManager.compress(this.state.messages);
+
+                // Re-check after compression and warn if still over budget
+                if (!this.budgetManager.canAddMessage(message, this.state.messages)) {
+                    this.logger.warn('Token budget still exceeded after compression, adding message anyway');
+                    // Note: We add the message anyway to maintain backward compatibility
+                    // Consider setting onBudgetExceeded: 'error' in config if strict enforcement is needed
+                }
             }
         }
 
@@ -400,17 +407,20 @@ export class ConversationBuilder {
         const position = this.calculatePosition(opts.position);
 
         // Format and inject
-        for (const item of itemsToAdd) {
+        for (let i = 0; i < itemsToAdd.length; i++) {
+            const item = itemsToAdd[i];
             const formatted = this.formatContextItem(item, opts.format);
             const contextMessage: ConversationMessage = {
                 role: 'user',
                 content: formatted,
             };
 
-            this.state.messages.splice(position, 0, contextMessage);
+            // Each item is inserted at position + index to maintain order
+            const actualPosition = position + i;
+            this.state.messages.splice(actualPosition, 0, contextMessage);
 
-            // Track in context manager
-            this.state.contextManager.track(item, position);
+            // Track in context manager with correct position
+            this.state.contextManager.track(item, actualPosition);
         }
 
         this.updateMetadata();
@@ -476,10 +486,16 @@ export class ConversationBuilder {
     }
 
     /**
-     * Export messages in OpenAI format
+     * Export messages in OpenAI format (deep copy to prevent shared state)
      */
     toMessages(): ConversationMessage[] {
-        return this.state.messages.map(msg => ({ ...msg }));
+        return this.state.messages.map(msg => ({
+            ...msg,
+            tool_calls: msg.tool_calls ? msg.tool_calls.map(tc => ({
+                ...tc,
+                function: { ...tc.function }
+            })) : undefined
+        }));
     }
 
     /**
@@ -526,7 +542,7 @@ export class ConversationBuilder {
     }
 
     /**
-     * Clone the conversation for parallel exploration
+     * Clone the conversation for parallel exploration (deep copy to prevent shared state)
      */
     clone(): ConversationBuilder {
         this.logger.debug('Cloning conversation');
@@ -537,7 +553,13 @@ export class ConversationBuilder {
         );
 
         // Deep copy state (note: contextManager is already created in constructor)
-        cloned.state.messages = this.state.messages.map(msg => ({ ...msg }));
+        cloned.state.messages = this.state.messages.map(msg => ({
+            ...msg,
+            tool_calls: msg.tool_calls ? msg.tool_calls.map(tc => ({
+                ...tc,
+                function: { ...tc.function }
+            })) : undefined
+        }));
         cloned.state.metadata = { ...this.state.metadata };
         cloned.state.contextProvided = new Set(this.state.contextProvided);
 
@@ -746,6 +768,12 @@ export class ConversationBuilder {
 
     /**
      * Calculate position for context injection
+     *
+     * Positions:
+     * - 'end': After all messages
+     * - 'before-last': Before the last message
+     * - 'after-system': After the LAST system message (useful for models with multiple system messages)
+     * - number: Specific index (clamped to valid range)
      */
     private calculatePosition(position: InjectOptions['position']): number {
         if (typeof position === 'number') {
@@ -758,7 +786,7 @@ export class ConversationBuilder {
             case 'before-last':
                 return Math.max(0, this.state.messages.length - 1);
             case 'after-system': {
-                // Find last system message (reverse search for compatibility)
+                // Find last system message (uses reverse search to find most recent system message)
                 let lastSystemIdx = -1;
                 for (let i = this.state.messages.length - 1; i >= 0; i--) {
                     if (this.state.messages[i].role === 'system') {

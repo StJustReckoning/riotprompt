@@ -1,8 +1,9 @@
-import { DEFAULT_PERSONA_ROLE } from "./constants";
+import { getPersonaRole as getPersonaRoleFromRegistry } from "./model-config";
 
 export type Role = "user" | "assistant" | "system" | "developer";
 
-export type Model = "gpt-4o" | "gpt-4o-mini" | "o1-preview" | "o1-mini" | "o1" | "o3-mini" | "o1-pro";
+// Model is now a flexible string type
+export type Model = string;
 
 export interface Message {
     role: Role;
@@ -18,10 +19,7 @@ export interface Request {
 }
 
 export const getPersonaRole = (model: Model): Role => {
-    if (model === "gpt-4o" || model === "gpt-4o-mini") {
-        return "system";
-    }
-    return DEFAULT_PERSONA_ROLE;
+    return getPersonaRoleFromRegistry(model);
 }
 
 export const createRequest = (model: Model): Request => {

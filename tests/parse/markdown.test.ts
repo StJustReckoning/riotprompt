@@ -103,7 +103,7 @@ describe('parser', () => {
         try {
             // Act & Assert
             await expect(parseFile('nonexistent.md'))
-                .rejects.toThrow(/Failed to parse instructions from nonexistent.md:/);
+                .rejects.toThrow(/Failed to parse content from nonexistent.md:/);
         } finally {
             // Restore console.error
             console.error = originalConsoleError;
