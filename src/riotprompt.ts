@@ -35,6 +35,18 @@ export { StrategyExecutor, IterationStrategyFactory } from "./iteration-strategy
 // ===== OBSERVABILITY =====
 export { MetricsCollector, ReflectionReportGenerator } from "./reflection";
 
+// ===== MODEL CONFIGURATION =====
+export {
+    ModelRegistry,
+    getModelRegistry,
+    resetModelRegistry,
+    getPersonaRole,
+    getEncoding,
+    supportsToolCalls,
+    getModelFamily,
+    configureModel
+} from "./model-config";
+
 // Export types
 export type { Content } from "./items/content";
 export type { Context } from "./items/context";
@@ -116,3 +128,8 @@ export type {
     ToolDefinition,
     ToolUsageStats
 } from "./tools";
+export type {
+    ModelConfig,
+    PersonaRole,
+    TokenizerEncoding
+} from "./model-config";

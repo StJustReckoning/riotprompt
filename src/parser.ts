@@ -56,14 +56,14 @@ export const create = (parserOptions?: OptionsParam): Instance => {
             });
         } catch (error) {
             // Log the error or handle it appropriately
-            logger.error(`Error reading or parsing file with marked at ${filePath}:`, error);
-            throw new Error(`Failed to parse instructions from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(`Error reading or parsing file at ${filePath}:`, error);
+            throw new Error(`Failed to parse content from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
     /**
      * Reads Markdown content and parses it into a single Section.
-     * 
+     *
      * - If the content starts with a heading, that becomes the title of the returned Section
      * - If no heading at the start, creates a Section with no title
      * - Headers within the content create nested sections based on their depth

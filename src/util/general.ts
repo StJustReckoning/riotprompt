@@ -24,7 +24,7 @@ export const stringifyJSON = function (obj: any, visited: Set<any> = new Set()):
     /*********CHECK FOR ARRAY**********/
     else if (Array.isArray(obj)) {
         //check for empty array
-        if (obj[0] === undefined)
+        if (obj.length === 0)
             return '[]';
         else {
             // Add array to visited before processing its elements

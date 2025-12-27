@@ -75,7 +75,7 @@ export const create = (loaderOptions?: OptionsParam): Instance => {
 
     /**
      * Loads context from the provided directories and returns instruction sections
-     * 
+     *
      * @param contextDirectories Directories containing context files
      * @returns Array of instruction sections loaded from context directories
      */
@@ -128,11 +128,21 @@ export const create = (loaderOptions?: OptionsParam): Instance => {
 
                 // Get all other files in the directory
                 const files = await storage.listFiles(contextDir);
-                const ignorePatternsRegex = ignorePatterns.map(pattern => new RegExp(pattern, 'i'));
+                const ignorePatternsRegex = ignorePatterns.map(pattern => {
+                    try {
+                        return new RegExp(pattern, 'i');
+                    } catch (error) {
+                        logger.error(`Invalid ignore pattern: ${pattern}`, { error });
+                        // Return a pattern that matches nothing
+                        return /(?!)/;  // Negative lookahead that always fails
+                    }
+                });
 
-                const filteredFiles = files.filter(file =>
-                    !ignorePatternsRegex.some(regex => regex.test(file))
-                );
+                const filteredFiles = files.filter(file => {
+                    const fullPath = path.join(contextDir, file);
+                    // Test against both filename and full path for flexibility
+                    return !ignorePatternsRegex.some(regex => regex.test(file) || regex.test(fullPath));
+                });
 
                 for (const file of filteredFiles) {
                     // Skip the context.md file as it's already processed
@@ -160,7 +170,8 @@ export const create = (loaderOptions?: OptionsParam): Instance => {
                         fileSection.add(contentToAdd, { ...sectionOptions });
 
                         // Add this file section to the main context section
-                        mainContextSection.add(fileSection as unknown as T, { ...sectionOptions });
+                        // Type is correct - Section.add() accepts Section<T>
+                        mainContextSection.add(fileSection, { ...sectionOptions });
                     }
                 }
 

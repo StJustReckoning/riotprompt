@@ -315,7 +315,7 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
 
         // Filter by categories if specified
         const filteredTools: Tool[] = finalConfig.toolCategories
-            ? tools.filter((tool: Tool) => finalConfig.toolCategories!.includes(tool.category || ''))
+            ? tools.filter((tool: Tool) => tool.category && finalConfig.toolCategories!.includes(tool.category))
             : tools;
 
         if (filteredTools.length > 0 && finalConfig.toolGuidance) {
@@ -496,11 +496,12 @@ export const recipe = (basePath: string) => {
         executeWith: async (
             llm: LLMClient,
             strategy: IterationStrategy,
+            model: Model = 'gpt-4o',
             tokenBudget?: TokenBudgetConfig
         ): Promise<StrategyResult> => {
             const prompt = await cook(config);
-            const conversation = ConversationBuilder.create({ model: 'gpt-4o' as Model }, config.logger);
-            conversation.fromPrompt(prompt, 'gpt-4o' as Model);
+            const conversation = ConversationBuilder.create({ model }, config.logger);
+            conversation.fromPrompt(prompt, model);
 
             if (tokenBudget) {
                 conversation.withTokenBudget(tokenBudget);
