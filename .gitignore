@@ -12,4 +12,5 @@ processed/.DS_Store
 **/.DS_Store
 processed/
 output/**
+agentic-*.md.kodrdriv-test-cache.json
 agentic-*.md
