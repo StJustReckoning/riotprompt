@@ -210,8 +210,8 @@ function App() {
                 <div className="footer-content">
                     <p>
                         Built with ❤️ by{' '}
-                        <a href="https://github.com/StJustReckoning" target="_blank" rel="noopener noreferrer">
-                            St. Just Reckoning
+                        <a href="https://github.com/tobrien" target="_blank" rel="noopener noreferrer">
+                            Tim O'Brien
                         </a>
                     </p>
                     <p className="license">Licensed under Apache-2.0</p>
@@ -221,4 +221,4 @@ function App() {
     )
 }
 
-export default App 
+export default App
