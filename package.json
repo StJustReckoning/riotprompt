@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "keywords": [
     "prompt",
     "llm",
@@ -43,7 +43,7 @@
     "docs:test": "cd docs && npm run test",
     "docs:coverage": "cd docs && npm run coverage"
   },
-  "author": "St. Just Reckoning <StJustReckoning@proton.me>",
+  "author": "Tim O'Brien <tobrien@discursive.com>",
   "license": "Apache-2.0",
   "devDependencies": {
     "@babel/core": "^7.28.0",
