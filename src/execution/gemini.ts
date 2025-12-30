@@ -10,8 +10,7 @@ export class GeminiProvider implements Provider {
         const genAI = new GoogleGenerativeAI(apiKey);
         
         const modelName = options.model || request.model || 'gemini-1.5-pro';
-        const model = genAI.getGenerativeModel({ model: modelName });
-
+        
         // Gemini format: system instruction is separate, history is separate from last message
         // generateContent accepts a string or parts.
         
@@ -19,7 +18,6 @@ export class GeminiProvider implements Provider {
         // Simple approach: Concat system instructions + chat history
         
         let systemInstruction = '';
-        const history = [];
         
         // Extract system prompt
         for (const msg of request.messages) {

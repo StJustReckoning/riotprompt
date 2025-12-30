@@ -75,7 +75,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
-    "@theunwalked/cardigantime": "file:../cardigantime",
+    "@theunwalked/cardigantime": "^0.0.17",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "fast-xml-parser": "^5.3.3",
