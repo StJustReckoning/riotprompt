@@ -10,7 +10,7 @@ const Breadcrumbs = ({ docSections }: BreadcrumbsProps) => {
     // Determine active section ID from URL path
     const activeSection = location.pathname === '/' 
         ? 'getting-started' 
-        : location.pathname.replace('/riotprompt/', '').replace('/', '');
+        : location.pathname.replace('/', '');
 
     const section = docSections.find(s => s.id === activeSection);
     
