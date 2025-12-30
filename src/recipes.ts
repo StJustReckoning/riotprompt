@@ -417,7 +417,7 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
     if (schema instanceof z.ZodType) {
         // It's a Zod schema!
         validator = schema;
-        const jsonSchema = zodToJsonSchema(schema, "response");
+        const jsonSchema = zodToJsonSchema(schema as any, "response");
         
         // Wrap in OpenAI Structured Output format
         // zod-to-json-schema returns { "$schema": "...", "definitions": { "response": { ... } }, "$ref": "#/definitions/response" }
