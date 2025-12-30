@@ -120,7 +120,7 @@ const DOC_SECTIONS = [
 
 function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Routes>
                 <Route path="/" element={<Layout docSections={DOC_SECTIONS} />}>
                     <Route index element={<DocPage docSections={DOC_SECTIONS} />} />

@@ -13,7 +13,7 @@ const Layout = ({ docSections }: LayoutProps) => {
     // Determine active section ID from URL path
     const activeSection = location.pathname === '/' 
         ? 'getting-started' 
-        : location.pathname.replace('/riotprompt/', '').replace('/', '');
+        : location.pathname.replace('/', '');
 
     // Check if we're on the home page
     const isHomePage = activeSection === 'getting-started';
