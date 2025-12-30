@@ -238,6 +238,7 @@ const prodReview = createReviewSection({
 You're now ready for the most advanced RiotPrompt features:
 
 - **[Recipes System](recipes.md)** - Revolutionary prompt creation with templates
+- **[Structured Outputs](structured-outputs.md)** - Define schemas for validated LLM responses
 - **[Override System](override.md)** - Multi-layered prompt customization
 - **[Builder Pattern](builder.md)** - Programmatic prompt construction
 - **[Loader](loader.md)** - File-based prompt management 

@@ -79,5 +79,10 @@ After creating a prompt:
 3. Use `riotprompt process` to preview the formatted output
 4. Use `riotprompt execute` to run it against an LLM
 
-[Learn about the process command →](cli-process)
+### Learn More
+
+- [Process command](cli-process) - Preview and format your prompts
+- [Execute command](cli-execute) - Run prompts against LLMs
+- [Structured Outputs](structured-outputs) - Define schemas for validated responses
+- [Recipes System](recipes) - Advanced programmatic prompt creation
 

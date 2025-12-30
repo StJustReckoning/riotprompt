@@ -172,6 +172,38 @@ const prompt = await cook({
 });
 ```
 
+## Structured Outputs
+
+The recipes system fully supports structured outputs using Zod schemas:
+
+```typescript
+import { cook } from 'riotprompt';
+import { z } from 'zod';
+
+// Define your output schema
+const analysisSchema = z.object({
+  summary: z.string(),
+  tags: z.array(z.string()),
+  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  confidence: z.number().min(0).max(1)
+});
+
+// Use it in your recipe
+const prompt = await cook({
+  basePath: __dirname,
+  persona: { content: 'You are a content analyst' },
+  instructions: [
+    { content: 'Analyze the content and provide structured output' }
+  ],
+  content: [{ content: articleText }],
+  schema: analysisSchema  // Automatic validation and type safety
+});
+```
+
+The schema works seamlessly across OpenAI, Anthropic (Claude), and Google Gemini with automatic format conversion.
+
+[Learn more about Structured Outputs →](structured-outputs)
+
 ## Content Item Types
 
 The recipes system supports flexible content specification:
