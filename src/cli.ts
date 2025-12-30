@@ -24,7 +24,7 @@ program
     .description('CLI tool for analyzing and processing prompts')
     .version('0.0.1');
 
-async function isDirectory(path: string): Promise<boolean> {
+export async function isDirectory(path: string): Promise<boolean> {
     try {
         const stat = await fs.stat(path);
         return stat.isDirectory();
@@ -33,7 +33,7 @@ async function isDirectory(path: string): Promise<boolean> {
     }
 }
 
-async function fileExists(path: string): Promise<boolean> {
+export async function fileExists(path: string): Promise<boolean> {
     try {
         await fs.access(path);
         return true;
@@ -42,7 +42,7 @@ async function fileExists(path: string): Promise<boolean> {
     }
 }
 
-async function loadPromptFromDirectory(absolutePromptPath: string): Promise<RiotPrompt.Prompt> {
+export async function loadPromptFromDirectory(absolutePromptPath: string): Promise<RiotPrompt.Prompt> {
     let personaSection: RiotPrompt.Section<RiotPrompt.Instruction> | undefined;
     let instructionsSection: RiotPrompt.Section<RiotPrompt.Instruction> | undefined;
     let contextSection: RiotPrompt.Section<RiotPrompt.Context> | undefined;
@@ -119,8 +119,199 @@ async function loadPromptFromDirectory(absolutePromptPath: string): Promise<Riot
     });
 }
 
+export async function createAction(promptName: string, options: any) {
+    try {
+        const basePath = path.resolve(options.path, promptName);
+
+        if (await fileExists(basePath)) {
+            console.error(`Error: Directory ${basePath} already exists.`);
+            process.exit(1);
+        }
+
+        if (options.import) {
+            // Import Mode
+            console.log(`Importing prompt from ${options.import} to ${basePath}...`);
+            const content = await fs.readFile(options.import, 'utf-8');
+            let prompt: RiotPrompt.Prompt;
+
+            if (options.import.endsWith('.json')) {
+                prompt = RiotPrompt.Serializer.fromJSON(content);
+            } else if (options.import.endsWith('.xml')) {
+                prompt = RiotPrompt.Serializer.fromXML(content);
+            } else {
+                throw new Error("Unsupported file extension. Use .json or .xml");
+            }
+
+            await RiotPrompt.Writer.saveToDirectory(prompt, basePath);
+            console.log(`Successfully imported to ${basePath}`);
+        } else {
+            // Scaffold Mode
+            console.log(`Creating prompt structure at ${basePath}...`);
+
+            // Create main directory
+            await fs.mkdir(basePath, { recursive: true });
+
+            // Create persona.md
+            const personaText = options.persona || 'You are a helpful AI assistant.';
+            await fs.writeFile(path.join(basePath, 'persona.md'), personaText);
+            console.log('Created persona.md');
+
+            // Create instructions.md
+            const instructionsText = options.instructions || 'Please analyze the following request.';
+            await fs.writeFile(path.join(basePath, 'instructions.md'), instructionsText);
+            console.log('Created instructions.md');
+
+            // Create context directory if requested
+            if (options.context) {
+                const contextDir = path.join(basePath, 'context');
+                await fs.mkdir(contextDir);
+                await fs.writeFile(path.join(contextDir, 'README.md'), 'Place context files (json, md, txt) in this directory.');
+                console.log('Created context directory');
+            }
+
+            console.log(`\nPrompt '${promptName}' created successfully!`);
+        }
+        console.log(`Run 'riotprompt process ${path.join(options.path, promptName)}' to test it.`);
+
+    } catch (error) {
+        console.error('Error creating prompt:', error);
+        process.exit(1);
+    }
+}
+
+export async function processAction(promptPath: string, options: any) {
+    try {
+        // Load configuration
+        const config = await configManager.read(options);
+        const modelName = options.model || config.defaultModel;
+
+        console.log(`Processing prompt from: ${promptPath}`);
+        console.log(`Using model: ${modelName}`);
+
+        const absolutePromptPath = path.resolve(promptPath);
+        
+        if (!await fileExists(absolutePromptPath)) {
+            console.error(`Error: Prompt path not found at ${absolutePromptPath}`);
+            process.exit(1);
+        }
+
+        let prompt: RiotPrompt.Prompt;
+
+        if (await isDirectory(absolutePromptPath)) {
+            prompt = await loadPromptFromDirectory(absolutePromptPath);
+        } else {
+            // It's a file
+            const content = await fs.readFile(absolutePromptPath, 'utf-8');
+            if (absolutePromptPath.endsWith('.json')) {
+                prompt = RiotPrompt.Serializer.fromJSON(content);
+            } else if (absolutePromptPath.endsWith('.xml')) {
+                prompt = RiotPrompt.Serializer.fromXML(content);
+            } else {
+                console.error('Error: Supported file formats are .json and .xml');
+                process.exit(1);
+            }
+        }
+
+        let output = '';
+
+        if (options.format === 'json') {
+            output = RiotPrompt.Serializer.toJSON(prompt);
+        } else if (options.format === 'xml') {
+            output = RiotPrompt.Serializer.toXML(prompt);
+        } else {
+            // Configure Model
+            const model = modelName as RiotPrompt.Model;
+
+            // Format
+            const formatter = RiotPrompt.Formatter.create();
+            const chatRequest = formatter.formatPrompt(model, prompt);
+
+            // Simple representation of the chat request
+            if (chatRequest.messages) {
+                output = chatRequest.messages.map(m => `--- ROLE: ${m.role} ---\n${m.content}`).join('\n\n');
+            } else {
+                output = JSON.stringify(chatRequest, null, 2);
+            }
+        }
+
+        if (options.output) {
+            await fs.writeFile(options.output, output);
+            console.log(`Output written to ${options.output}`);
+        } else {
+            console.log('\n--- Result ---\n');
+            console.log(output);
+        }
+
+    } catch (error) {
+        console.error('Error processing prompt:', error);
+        process.exit(1);
+    }
+}
+
+export async function executeAction(promptPath: string, options: any) {
+    try {
+        // Load configuration
+        const config = await configManager.read(options);
+        const modelName = options.model || config.defaultModel;
+
+        console.log(`Executing prompt from: ${promptPath}`);
+        console.log(`Using model: ${modelName}`);
+
+        const absolutePromptPath = path.resolve(promptPath);
+        
+        if (!await fileExists(absolutePromptPath)) {
+            console.error(`Error: Prompt path not found at ${absolutePromptPath}`);
+            process.exit(1);
+        }
+
+        let prompt: RiotPrompt.Prompt;
+
+        if (await isDirectory(absolutePromptPath)) {
+            prompt = await loadPromptFromDirectory(absolutePromptPath);
+        } else {
+            // It's a file
+            const content = await fs.readFile(absolutePromptPath, 'utf-8');
+            if (absolutePromptPath.endsWith('.json')) {
+                prompt = RiotPrompt.Serializer.fromJSON(content);
+            } else if (absolutePromptPath.endsWith('.xml')) {
+                prompt = RiotPrompt.Serializer.fromXML(content);
+            } else {
+                console.error('Error: Supported file formats are .json and .xml');
+                process.exit(1);
+            }
+        }
+
+        // Format the prompt for the model
+        const formatter = RiotPrompt.Formatter.create();
+        const chatRequest = formatter.formatPrompt(modelName as RiotPrompt.Model, prompt);
+
+        // Execute
+        const executionOptions: RiotPrompt.Execution.ExecutionOptions = {
+            apiKey: options.key,
+            model: modelName,
+            temperature: options.temperature,
+            maxTokens: options.maxTokens
+        };
+
+        const result = await RiotPrompt.Execution.execute(chatRequest, executionOptions);
+
+        console.log('\n--- Response ---\n');
+        console.log(result.content);
+        
+        if (result.usage) {
+            console.log('\n--- Usage ---');
+            console.log(`Input Tokens: ${result.usage.inputTokens}`);
+            console.log(`Output Tokens: ${result.usage.outputTokens}`);
+        }
+
+    } catch (error: any) {
+        console.error('Error executing prompt:', error.message || error);
+        process.exit(1);
+    }
+}
+
 // Integrate Cardigantime with Commander
-async function main() {
+export async function main() {
     await configManager.configure(program);
 
     program
@@ -132,65 +323,7 @@ async function main() {
         .option('--context', 'Create context directory with placeholder', true)
         .option('--no-context', 'Do not create context directory')
         .option('--import <file>', 'Import prompt structure from a JSON or XML file')
-        .action(async (promptName, options) => {
-            try {
-                const basePath = path.resolve(options.path, promptName);
-
-                if (await fileExists(basePath)) {
-                    console.error(`Error: Directory ${basePath} already exists.`);
-                    process.exit(1);
-                }
-
-                if (options.import) {
-                    // Import Mode
-                    console.log(`Importing prompt from ${options.import} to ${basePath}...`);
-                    const content = await fs.readFile(options.import, 'utf-8');
-                    let prompt: RiotPrompt.Prompt;
-
-                    if (options.import.endsWith('.json')) {
-                        prompt = RiotPrompt.Serializer.fromJSON(content);
-                    } else if (options.import.endsWith('.xml')) {
-                        prompt = RiotPrompt.Serializer.fromXML(content);
-                    } else {
-                        throw new Error("Unsupported file extension. Use .json or .xml");
-                    }
-
-                    await RiotPrompt.Writer.saveToDirectory(prompt, basePath);
-                    console.log(`Successfully imported to ${basePath}`);
-                } else {
-                    // Scaffold Mode
-                    console.log(`Creating prompt structure at ${basePath}...`);
-
-                    // Create main directory
-                    await fs.mkdir(basePath, { recursive: true });
-
-                    // Create persona.md
-                    const personaText = options.persona || 'You are a helpful AI assistant.';
-                    await fs.writeFile(path.join(basePath, 'persona.md'), personaText);
-                    console.log('Created persona.md');
-
-                    // Create instructions.md
-                    const instructionsText = options.instructions || 'Please analyze the following request.';
-                    await fs.writeFile(path.join(basePath, 'instructions.md'), instructionsText);
-                    console.log('Created instructions.md');
-
-                    // Create context directory if requested
-                    if (options.context) {
-                        const contextDir = path.join(basePath, 'context');
-                        await fs.mkdir(contextDir);
-                        await fs.writeFile(path.join(contextDir, 'README.md'), 'Place context files (json, md, txt) in this directory.');
-                        console.log('Created context directory');
-                    }
-
-                    console.log(`\nPrompt '${promptName}' created successfully!`);
-                }
-                console.log(`Run 'riotprompt process ${path.join(options.path, promptName)}' to test it.`);
-
-            } catch (error) {
-                console.error('Error creating prompt:', error);
-                process.exit(1);
-            }
-        });
+        .action(createAction);
 
     program
         .command('process <promptPath>')
@@ -198,74 +331,7 @@ async function main() {
         .option('-m, --model <model>', 'Model to format for (e.g., gpt-4, claude)')
         .option('-o, --output <file>', 'Output file path')
         .option('--format <format>', 'Output format (text, json, xml)', 'text')
-        .action(async (promptPath, options) => {
-            try {
-                // Load configuration
-                const config = await configManager.read(options);
-                const modelName = options.model || config.defaultModel;
-
-                console.log(`Processing prompt from: ${promptPath}`);
-                console.log(`Using model: ${modelName}`);
-
-                const absolutePromptPath = path.resolve(promptPath);
-                
-                if (!await fileExists(absolutePromptPath)) {
-                    console.error(`Error: Prompt path not found at ${absolutePromptPath}`);
-                    process.exit(1);
-                }
-
-                let prompt: RiotPrompt.Prompt;
-
-                if (await isDirectory(absolutePromptPath)) {
-                    prompt = await loadPromptFromDirectory(absolutePromptPath);
-                } else {
-                    // It's a file
-                    const content = await fs.readFile(absolutePromptPath, 'utf-8');
-                    if (absolutePromptPath.endsWith('.json')) {
-                        prompt = RiotPrompt.Serializer.fromJSON(content);
-                    } else if (absolutePromptPath.endsWith('.xml')) {
-                        prompt = RiotPrompt.Serializer.fromXML(content);
-                    } else {
-                        console.error('Error: Supported file formats are .json and .xml');
-                        process.exit(1);
-                    }
-                }
-
-                let output = '';
-
-                if (options.format === 'json') {
-                    output = RiotPrompt.Serializer.toJSON(prompt);
-                } else if (options.format === 'xml') {
-                    output = RiotPrompt.Serializer.toXML(prompt);
-                } else {
-                    // Configure Model
-                    const model = modelName as RiotPrompt.Model;
-
-                    // Format
-                    const formatter = RiotPrompt.Formatter.create();
-                    const chatRequest = formatter.formatPrompt(model, prompt);
-
-                    // Simple representation of the chat request
-                    if (chatRequest.messages) {
-                        output = chatRequest.messages.map(m => `--- ROLE: ${m.role} ---\n${m.content}`).join('\n\n');
-                    } else {
-                        output = JSON.stringify(chatRequest, null, 2);
-                    }
-                }
-
-                if (options.output) {
-                    await fs.writeFile(options.output, output);
-                    console.log(`Output written to ${options.output}`);
-                } else {
-                    console.log('\n--- Result ---\n');
-                    console.log(output);
-                }
-
-            } catch (error) {
-                console.error('Error processing prompt:', error);
-                process.exit(1);
-            }
-        });
+        .action(processAction);
 
     program
         .command('execute <promptPath>')
@@ -274,72 +340,16 @@ async function main() {
         .option('-k, --key <key>', 'API Key (overrides env vars)')
         .option('-t, --temperature <number>', 'Temperature (0-1)', parseFloat)
         .option('--max-tokens <number>', 'Max tokens', parseInt)
-        .action(async (promptPath, options) => {
-            try {
-                // Load configuration
-                const config = await configManager.read(options);
-                const modelName = options.model || config.defaultModel;
-
-                console.log(`Executing prompt from: ${promptPath}`);
-                console.log(`Using model: ${modelName}`);
-
-                const absolutePromptPath = path.resolve(promptPath);
-                
-                if (!await fileExists(absolutePromptPath)) {
-                    console.error(`Error: Prompt path not found at ${absolutePromptPath}`);
-                    process.exit(1);
-                }
-
-                let prompt: RiotPrompt.Prompt;
-
-                if (await isDirectory(absolutePromptPath)) {
-                    prompt = await loadPromptFromDirectory(absolutePromptPath);
-                } else {
-                    // It's a file
-                    const content = await fs.readFile(absolutePromptPath, 'utf-8');
-                    if (absolutePromptPath.endsWith('.json')) {
-                        prompt = RiotPrompt.Serializer.fromJSON(content);
-                    } else if (absolutePromptPath.endsWith('.xml')) {
-                        prompt = RiotPrompt.Serializer.fromXML(content);
-                    } else {
-                        console.error('Error: Supported file formats are .json and .xml');
-                        process.exit(1);
-                    }
-                }
-
-                // Format the prompt for the model
-                const formatter = RiotPrompt.Formatter.create();
-                const chatRequest = formatter.formatPrompt(modelName as RiotPrompt.Model, prompt);
-
-                // Execute
-                const executionOptions: RiotPrompt.Execution.ExecutionOptions = {
-                    apiKey: options.key,
-                    model: modelName,
-                    temperature: options.temperature,
-                    maxTokens: options.maxTokens
-                };
-
-                const result = await RiotPrompt.Execution.execute(chatRequest, executionOptions);
-
-                console.log('\n--- Response ---\n');
-                console.log(result.content);
-                
-                if (result.usage) {
-                    console.log('\n--- Usage ---');
-                    console.log(`Input Tokens: ${result.usage.inputTokens}`);
-                    console.log(`Output Tokens: ${result.usage.outputTokens}`);
-                }
-
-            } catch (error: any) {
-                console.error('Error executing prompt:', error.message || error);
-                process.exit(1);
-            }
-        });
+        .action(executeAction);
 
     await program.parseAsync();
 }
 
-main().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+/* v8 ignore start */
+if (typeof require !== 'undefined' && require.main === module) {
+    main().catch(err => {
+        console.error(err);
+        process.exit(1);
+    });
+}
+/* v8 ignore end */

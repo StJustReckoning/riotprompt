@@ -282,6 +282,12 @@ describe('Iteration Strategies', () => {
                 state.toolCallsExecuted = 5;
                 const late = await strategy.onIteration!(16, state);
                 expect(late).toBe('continue');
+
+                // Late iterations without tools used -> stop
+                state.iteration = 16;
+                state.toolCallsExecuted = 0;
+                const stop = await strategy.onIteration!(16, state);
+                expect(stop).toBe('stop');
             });
         });
 

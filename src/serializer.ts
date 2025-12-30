@@ -35,7 +35,7 @@ const itemToXML = (item: any): string => {
 
     // Check if it's a weighted item
     if (item && typeof item === 'object' && 'text' in item) {
-        const weightAttr = item.weight ? ` weight="${item.weight}"` : '';
+        const weightAttr = (item.weight !== undefined && item.weight !== null) ? ` weight="${item.weight}"` : '';
         return `<item${weightAttr}>${escapeXML(item.text)}</item>`;
     }
 
@@ -136,22 +136,33 @@ export const fromJSON = (jsonString: string): Prompt => {
 
 const parseNodeToSection = <T extends Weighted>(node: any): Section<T> => {
     // Node structure with preserveOrder: true
-    // { "section": [ ...children... ], ":@": { "@_title": "val", "@_weight": "1" } }
+    // It seems attributes can be a sibling property ":@" OR inside the children array depending on version/config/content.
     
-    const attributes = node[":@"] || {};
+    // Children are in the array value of the key "section", "persona", etc.
+    const children = node.section || node.persona || node.instructions || node.contents || node.contexts || [];
+    
+    let attributes = node[":@"] || {};
+    
+    // Fallback: check if attributes are inside the children array (as seen in some tests/mocks)
+    if (!node[":@"] && Array.isArray(children)) {
+        for (const child of children) {
+            if (child[":@"]) {
+                attributes = child[":@"];
+                break;
+            }
+        }
+    }
+
     const title = attributes["@_title"];
     const weight = attributes["@_weight"] ? Number(attributes["@_weight"]) : undefined;
     
     const section = createSection<T>({ title, weight });
     
-    // Children are in the array value of the key "section" (or whatever the tag name was)
-    const children = node.section || node.persona || node.instructions || node.contents || node.contexts; 
-    
     if (Array.isArray(children)) {
         for (const child of children) {
             const key = Object.keys(child)[0]; // "item" or "section" or ":@"
             // console.log(`Processing child key: ${key}`);
-            if (key === ":@") continue;
+            if (key === ":@") continue; // Already handled or just attributes
              
             if (key === "item") {
                 // Item structure: [ { "#text": "Value" }, { ":@": ... } ]
@@ -160,11 +171,20 @@ const parseNodeToSection = <T extends Weighted>(node: any): Section<T> => {
                 let itemWeight = undefined;
                  
                 for (const part of itemContent) {
-                    if (Object.keys(part)[0] === "#text") {
+                    const keys = Object.keys(part);
+                    // console.log('Processing item part keys:', keys);
+                    if (keys.includes("#text")) {
                         text = part["#text"];
-                    } else if (Object.keys(part)[0] === ":@") {
+                    } else if (keys.includes(":@")) {
                         const attrs = part[":@"];
-                        if (attrs["@_weight"]) itemWeight = Number(attrs["@_weight"]);
+                        // console.log('Found attributes:', attrs);
+                        // Check both with and without prefix just in case
+                        const w = attrs["@_weight"] || attrs["weight"];
+                        if (w !== undefined) itemWeight = Number(w);
+                    } else {
+                        // Fallback for cases where attributes might be directly on the part (unexpected but possible)
+                        const w = part["@_weight"] || part["weight"];
+                        if (w !== undefined) itemWeight = Number(w);
                     }
                 }
                 // console.log(`Adding item: ${text}`);

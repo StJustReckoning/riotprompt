@@ -6,7 +6,8 @@ A powerful, flexible prompt building library and CLI tool for AI applications wi
 
 - **Structured Prompts**: Treat prompts as code with sections for Persona, Instructions, and Context.
 - **CLI Tool**: Scaffold, manage, process, and **execute** prompts directly from the terminal.
-- **Model Agnostic**: Format prompts for different models (GPT-4, Claude, etc.) automatically.
+- **Model Agnostic**: Format prompts for different models (GPT-4, Claude, Gemini, etc.) automatically.
+- **Model Families**: Intelligent handling of model-specific quirks (e.g., 'developer' vs 'system' roles for O-series vs GPT-4).
 - **Execution Engine**: Run prompts against OpenAI, Anthropic, or Gemini APIs directly.
 - **Portable**: Serialize prompts to JSON or XML for easy exchange between systems.
 - **Type-Safe**: Full TypeScript support with excellent IntelliSense.
@@ -60,11 +61,30 @@ npx riotprompt process my-prompt --format xml --output prompt.xml
 
 Run the prompt directly against an LLM provider.
 
-**Prerequisites**: Set your API keys in a `.env` file or environment variables:
-```
+#### Provider Setup & API Keys
+
+RiotPrompt supports multiple LLM providers. You'll need to obtain an API key for the provider you wish to use and set it as an environment variable (recommended) or pass it via the `-k` flag.
+
+##### Google Gemini
+1.  **Get API Key**: Visit [Google AI Studio](https://aistudio.google.com/), sign in, and click "Get API key".
+2.  **Set Environment Variable**: `GEMINI_API_KEY`
+3.  **Available Models**: Check the [Gemini models documentation](https://ai.google.dev/models/gemini). Common models include `gemini-1.5-pro`, `gemini-1.5-flash`.
+
+##### OpenAI
+1.  **Get API Key**: Go to the [OpenAI Platform](https://platform.openai.com/api-keys), sign up/login, and create a new secret key.
+2.  **Set Environment Variable**: `OPENAI_API_KEY`
+3.  **Available Models**: See [OpenAI Models](https://platform.openai.com/docs/models). Common models: `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`.
+
+##### Anthropic (Claude)
+1.  **Get API Key**: Access the [Anthropic Console](https://console.anthropic.com/settings/keys) and generate an API key.
+2.  **Set Environment Variable**: `ANTHROPIC_API_KEY`
+3.  **Available Models**: View [Claude Models](https://docs.anthropic.com/en/docs/models-overview). Common models: `claude-3-opus-20240229`, `claude-3-sonnet-20240229`.
+
+**Example .env file:**
+```bash
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=...
+GEMINI_API_KEY=AIza...
 ```
 
 **Commands**:

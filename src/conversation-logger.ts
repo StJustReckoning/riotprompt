@@ -344,7 +344,13 @@ export class ConversationLogger {
             .replace('{id}', this.conversationId)
             .replace('{template}', this.metadata.template || 'default');
 
-        const ext = this.config.format === 'markdown' ? '.md' : '.json';
+        let ext = '.json';
+        if (this.config.format === 'markdown') {
+            ext = '.md';
+        } else if (this.config.format === 'jsonl') {
+            ext = '.jsonl';
+        }
+        
         const fullPath = path.join(this.config.outputPath, filename + ext);
 
         // Ensure directory exists

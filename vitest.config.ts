@@ -21,7 +21,9 @@ export default defineConfig({
                 'dist/**',
                 'vitest.config.ts',
                 'vite.config.ts',
+                'vite.config.cli.ts',
                 'demo-recipes.ts',
+                'src/execution/provider.ts',
                 'eslint.config.mjs',
                 '.markdown-doctest-setup.mjs',
             ]
