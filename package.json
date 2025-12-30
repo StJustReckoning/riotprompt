@@ -23,8 +23,11 @@
       "require": "./dist/riotprompt.cjs"
     }
   },
+  "bin": {
+    "riotprompt": "./dist/cli.cjs"
+  },
   "scripts": {
-    "build": "npm run lint && tsc --noEmit && vite build",
+    "build": "npm run lint && tsc --noEmit && vite build && vite build -c vite.config.cli.ts",
     "start": "dist/main.js",
     "dev": "vite",
     "watch": "vite build --watch",
@@ -70,8 +73,16 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@google/generative-ai": "^0.24.1",
+    "@theunwalked/cardigantime": "file:../cardigantime",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "fast-xml-parser": "^5.3.3",
     "glob": "^11.0.3",
+    "js-yaml": "^4.1.1",
     "marked": "^16.0.0",
+    "openai": "^6.15.0",
     "tiktoken": "^1.0.22",
     "zod": "^4.0.2"
   }

@@ -35,6 +35,10 @@ export { StrategyExecutor, IterationStrategyFactory } from "./iteration-strategy
 // ===== OBSERVABILITY =====
 export { MetricsCollector, ReflectionReportGenerator } from "./reflection";
 
+export * as Serializer from "./serializer";
+export * as Writer from "./writer";
+export * as Execution from "./execution/index";
+
 // ===== MODEL CONFIGURATION =====
 export {
     ModelRegistry,
