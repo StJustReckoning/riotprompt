@@ -43,6 +43,12 @@ describe('Execution Manager', () => {
         expect(provider).toBeInstanceOf(OpenAIProvider);
     });
 
+    it('should handle undefined model gracefully (default to OpenAI)', () => {
+        // @ts-ignore
+        const provider = manager.getProvider(undefined);
+        expect(provider).toBeInstanceOf(OpenAIProvider);
+    });
+
     it('should execute request using selected provider', async () => {
         const mockExecute = vi.fn().mockResolvedValue({
             content: 'Response',
@@ -86,13 +92,6 @@ describe('Execution Manager', () => {
         // Options say Claude
         await manager.execute(request, { model: 'claude-3' });
 
-        // Should use Anthropic provider because options.model override
-        // Wait, getProvider is called with options.model || request.model
-        // And execute called on that provider.
-        
-        // Let's verify correct provider is chosen
-        // We need to spy on getProvider or check the side effect (mock called)
-        
         expect(mockExecute).toHaveBeenCalled();
     });
 
@@ -119,4 +118,3 @@ describe('Execution Manager', () => {
         });
     });
 });
-

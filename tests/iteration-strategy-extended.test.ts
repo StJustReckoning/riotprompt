@@ -65,7 +65,7 @@ describe('Iteration Strategy Extended Coverage', () => {
                 }]
             };
 
-            const failingTool = {
+            const failingTool: any = {
                 name: 'fail_tool',
                 description: 'Fails',
                 parameters: { type: 'object', properties: {} },

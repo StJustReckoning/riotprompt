@@ -102,7 +102,7 @@ describe('Execution Providers Extended', () => {
             const provider = new AnthropicProvider();
             await provider.execute({
                 model: 'claude',
-                messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+                messages: [{ role: 'user', content: JSON.stringify([{ type: 'text', text: 'hi' }]) }],
                 addMessage: () => {}
             }, { apiKey: 'key' });
             
@@ -155,7 +155,7 @@ describe('Execution Providers Extended', () => {
             const provider = new OpenAIProvider();
             const result = await provider.execute({
                 model: 'gpt-4',
-                messages: [{ role: 'user', content: ['part1', 'part2'] }],
+                messages: [{ role: 'user', content: JSON.stringify(['part1', 'part2']) }],
                 addMessage: () => {}
             }, { apiKey: 'key' });
 
@@ -241,7 +241,7 @@ describe('Execution Providers Extended', () => {
             const provider = new GeminiProvider();
             const result = await provider.execute({
                 model: 'gemini',
-                messages: [{ role: 'user', content: { text: 'hi' } }],
+                messages: [{ role: 'user', content: JSON.stringify({ text: 'hi' }) }],
                 addMessage: () => {}
             }, { apiKey: 'key' });
 

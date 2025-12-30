@@ -17,6 +17,10 @@ export class ExecutionManager {
     }
 
     getProvider(model: string): Provider {
+        if (!model) {
+            // Default to OpenAI if model is undefined
+            return this.providers.get('openai')!;
+        }
         if (model.startsWith('gpt') || model.startsWith('o1')) {
             return this.providers.get('openai')!;
         } else if (model.startsWith('claude')) {

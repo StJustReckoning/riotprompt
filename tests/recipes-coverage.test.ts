@@ -39,15 +39,17 @@ describe('Recipes Coverage', () => {
                     properties: { query: { type: 'string', description: 'Query string' } },
                     required: ['query']
                 },
+                execute: async () => 'result',
                 category: 'Research',
-                examples: [{ scenario: 'Find weather', params: { query: 'weather' } }]
+                examples: [{ scenario: 'Find weather', params: { query: 'weather' }, expectedResult: 'Weather info' }]
             },
             {
                 name: 'calc',
                 description: 'Calculate math',
                 parameters: { type: 'object', properties: {} },
+                execute: async () => 'result',
                 category: 'Math',
-                cost: 'low'
+                cost: 'low' as any
             }
         ];
 
