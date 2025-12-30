@@ -11,7 +11,7 @@ on:
       - main
       - working
   push:
-    branches: [ "working" ]
+    branches: [ "working", "main" ]
 
 jobs:
   test:
