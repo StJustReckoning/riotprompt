@@ -62,9 +62,15 @@ RiotPrompt helps you:
 
 ## What's Next?
 
-Now that you have RiotPrompt installed and understand the basics, explore these topics:
+### Get Started Quickly
+
+- **[Quick Start Guide](quick-start.md)** - Create and execute your first prompt in 5 minutes
+- **[Complete Tutorial](tutorial.md)** - Comprehensive guide to mastering RiotPrompt
+
+### Explore Core Concepts
 
 - **[Core Concepts](core-concepts.md)** - Understand WeightedText, Sections, and prompt structure
 - **[Basic Usage](basic-usage.md)** - Learn how to create and format sections
 - **[Recipes System](recipes.md)** - Discover the revolutionary new way to create prompts
+- **[Structured Outputs](structured-outputs.md)** - Get validated, type-safe responses from LLMs
 - **[Advanced Usage](advanced-usage.md)** - Explore parameters, weights, and complex structures 

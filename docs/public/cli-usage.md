@@ -65,6 +65,14 @@ GEMINI_API_KEY=AIza...
 
 The CLI will automatically load these variables when running commands.
 
+### Provider-Specific Guides
+
+For detailed information on each provider's capabilities, best practices, and how RiotPrompt adapts to their requirements:
+
+- **[OpenAI Provider](provider-openai)** - GPT-4, o-series models, and best practices
+- **[Anthropic Provider](provider-anthropic)** - Claude models and system prompt handling
+- **[Gemini Provider](provider-gemini)** - Gemini models and long context windows
+
 ## Available Commands
 
 The RiotPrompt CLI provides three main commands:
@@ -94,17 +102,19 @@ promptsDir: "./prompts"
 outputDir: "./output"
 ```
 
+[View complete configuration options documentation →](configuration-options)
+
 ## Quick Start
 
-```bash
-# 1. Create a new prompt
-npx riotprompt create my-analysis-prompt
+New to RiotPrompt? Get started in 5 minutes with our step-by-step guide:
 
-# 2. Edit the generated files (persona.md, instructions.md)
+**[→ Quick Start Guide](quick-start)**
 
-# 3. Process it to see the formatted output
-npx riotprompt process my-analysis-prompt -m gpt-4
+The Quick Start guide walks you through:
+- Creating your first prompt
+- Understanding the generated structure
+- Processing and executing prompts
+- Setting up API keys
+- Common troubleshooting
 
-# 4. Execute it against an LLM
-npx riotprompt execute my-analysis-prompt -m gpt-4
-```
+For a deeper dive, see the **[Complete Tutorial](tutorial)**.

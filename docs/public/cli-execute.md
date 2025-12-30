@@ -83,16 +83,19 @@ Output Tokens: 320
 ## Supported Models
 
 ### OpenAI
-- `gpt-4o`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`
+- `gpt-4o`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`, `o1`, `o1-mini`
 - Requires: `OPENAI_API_KEY`
+- [View OpenAI provider documentation →](provider-openai)
 
 ### Anthropic (Claude)
-- `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`
+- `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`
 - Requires: `ANTHROPIC_API_KEY`
+- [View Anthropic provider documentation →](provider-anthropic)
 
 ### Google Gemini
-- `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-pro`
+- `gemini-2.0-flash-exp`, `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-1.5-flash-8b`
 - Requires: `GEMINI_API_KEY`
+- [View Gemini provider documentation →](provider-gemini)
 
 ## Error Handling
 
@@ -110,5 +113,18 @@ If execution fails, check:
 - Use higher temperature (0.7-0.9) for creative tasks
 - Set `max-tokens` to control costs and response length
 
-[Back to CLI Overview →](cli-usage)
+## Provider-Specific Guides
+
+Each LLM provider has different capabilities and best practices. See these guides for detailed information:
+
+- **[OpenAI Provider Guide](provider-openai)** - GPT models, o-series, role handling
+- **[Anthropic Provider Guide](provider-anthropic)** - Claude models, system prompts, tool use
+- **[Gemini Provider Guide](provider-gemini)** - Gemini models, long context, native JSON
+
+## Related Documentation
+
+- [CLI Usage Overview](cli-usage) - All CLI commands
+- [create Command](cli-create) - Scaffold new prompts
+- [process Command](cli-process) - Preview and format prompts
+- [Structured Outputs](structured-outputs) - Define schemas for responses
 

@@ -26,6 +26,8 @@ npm install riotprompt
 
 RiotPrompt comes with a command-line interface to help you organize, process, and execute prompts.
 
+**New to RiotPrompt?** Check out the [Quick Start Guide](docs/public/quick-start.md) or [Complete Tutorial](docs/public/tutorial.md).
+
 ### 1. Create a Prompt
 
 Scaffold a new prompt directory structure:
@@ -124,20 +126,23 @@ You can also use RiotPrompt programmatically in your application.
 ```typescript
 import { cook, registerTemplates } from 'riotprompt';
 
-// Advanced prompt creation
+// Advanced prompt creation with structured outputs
 import { z } from "zod";
 
 const prompt = await cook({
   basePath: __dirname,
   persona: { content: 'You are a helpful AI assistant' },
-  // ...
-  // Structured Output with Zod
+  instructions: [{ content: 'Analyze the content' }],
+  content: [{ content: dataToAnalyze }],
+  // Structured Output with Zod - automatic validation across all providers
   schema: z.object({
       summary: z.string(),
       tags: z.array(z.string()),
       confidence: z.number().min(0).max(1)
   })
 });
+
+// Learn more: https://tobrien.github.io/riotprompt/structured-outputs
 
 // Register and use templates
 registerTemplates({
@@ -160,6 +165,7 @@ For more detailed guides on architecture and advanced usage, check the [Guide](g
 
 - [Core Concepts](docs/public/core-concepts.md)
 - [Recipes System](docs/public/recipes.md)
+- [Structured Outputs](docs/public/structured-outputs.md)
 - [API Reference](docs/public/api-reference.md)
 - [Template Configuration](docs/public/template-configuration.md)
 

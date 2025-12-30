@@ -8,40 +8,41 @@
 
 `riotprompt` is a library and CLI tool designed to treat LLM prompts as structured code objects rather than simple strings. It allows for the modular assembly, validation, and formatting of prompts.
 
-*   **Structured Prompts**: Prompts are composed of distinct sections: `Persona`, `Instructions`, `Context`, and `Content`.
-*   **Modular Assembly**: Sections can be loaded from separate files or directories and combined dynamically.
-*   **Model-Agnostic Formatting**: The library separates the *content* of a prompt from its *format*. It can output prompts optimized for different models (e.g., OpenAI, Claude) using adapters.
-*   **Serialization**: Prompts can be serialized to JSON or XML for storage or exchange.
-*   **CLI Tool**: A command-line interface allows for easy processing of prompt directories into formatted outputs.
+*   **Structured Prompts**: Prompts are composed of distinct sections beyond just "System" and "User". Use specialized sections like `Persona`, `Instructions`, `Constraints`, `Tone`, `Examples`, `Reasoning`, and more.
+*   **Recipes & Templates**: A declarative API (`cook`) allows you to assemble prompts from configuration objects and reusable templates.
+*   **Structured Outputs**: Portable support for structured outputs using `zod` schemas. Write one schema and use it across OpenAI, Anthropic, and Gemini.
+*   **Model-Agnostic Formatting**: The library separates the *content* of a prompt from its *format*. It can output prompts optimized for different models (e.g., handling role mapping for OpenAI's O-series vs GPT-4).
+*   **CLI Tool**: A command-line interface allows for easy scaffolding, processing, and execution of file-based prompts.
 
 ## Quick Start Context
 
 When analyzing or generating code using `riotprompt`, keep these patterns in mind:
 
-1.  **Define Sections**: Prompts are built from `Section<T>` objects.
-2.  **Create Prompt**: Use `createPrompt` to combine sections.
-3.  **Format**: Use `Formatter` to convert the structured prompt into a string or chat messages for a specific model.
+1.  **Use Recipes**: The `cook` function is the primary entry point for creating prompts programmatically.
+2.  **Use Schemas**: For structured data, pass a `zod` schema to `cook`.
+3.  **Execute via Provider**: Use `executeChat` to run prompts against LLMs, handling provider-specific details automatically.
 
 ```typescript
-import * as RiotPrompt from '@riotprompt/riotprompt';
+import { cook, executeChat } from '@riotprompt/riotprompt';
+import { z } from 'zod';
 
-// 1. Create Sections
-const persona = RiotPrompt.createSection({ title: 'Persona' })
-    .add(RiotPrompt.createInstruction('You are a helpful assistant.'));
-
-const instructions = RiotPrompt.createSection({ title: 'Instructions' })
-    .add(RiotPrompt.createInstruction('Summarize the following text.'));
-
-// 2. Create Prompt
-const prompt = RiotPrompt.createPrompt({
-    persona,
-    instructions
+// Define output structure
+const ResultSchema = z.object({
+    summary: z.string(),
+    tags: z.array(z.string())
 });
 
-// 3. Format
-const formatter = RiotPrompt.Formatter.create();
-// chatRequest will be a structured object suitable for API calls (e.g. OpenAI chat completion)
-const chatRequest = formatter.formatPrompt('gpt-4', prompt); 
+// Create prompt
+const prompt = await cook({
+    basePath: __dirname,
+    persona: { content: 'You are a summarizer.' },
+    instructions: [{ content: 'Summarize the text.' }],
+    content: [{ content: 'Long text...' }],
+    schema: ResultSchema
+});
+
+// Execute
+const result = await executeChat(prompt, { model: 'gpt-4o' });
 ```
 
 ## Documentation Structure
@@ -49,7 +50,6 @@ const chatRequest = formatter.formatPrompt('gpt-4', prompt);
 This guide directory contains specialized documentation for different aspects of the system:
 
 *   [Architecture](./architecture.md): Internal design, module structure, and data flow.
-*   [Usage Patterns](./usage.md): Common patterns for CLI and library usage.
+*   [Usage Patterns](./usage.md): Common patterns for CLI and library usage, including the Recipes API and Structured Outputs.
 *   [Configuration](./configuration.md): Deep dive into configuration options.
 *   [Development](./development.md): Guide for contributing to `riotprompt`.
-
