@@ -56,10 +56,10 @@ describe('GeminiProvider', () => {
 
         const result = await provider.execute(request, { apiKey: 'test-key' });
 
-        expect(mockGetGenerativeModel).toHaveBeenCalledWith({
+        expect(mockGetGenerativeModel).toHaveBeenCalledWith(expect.objectContaining({
             model: 'gemini-1.5-pro',
             systemInstruction: undefined
-        });
+        }));
 
         expect(mockGenerateContent).toHaveBeenCalledWith('Hello');
 

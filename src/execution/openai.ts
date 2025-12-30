@@ -32,6 +32,7 @@ export class OpenAIProvider implements Provider {
             messages: messages,
             temperature: options.temperature,
             max_tokens: options.maxTokens,
+            response_format: request.responseFormat,
         });
 
         const choice = response.choices[0];

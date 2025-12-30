@@ -11,6 +11,61 @@ export class GeminiProvider implements Provider {
         
         const modelName = options.model || request.model || 'gemini-1.5-pro';
         
+        // Handle generation config for structured output
+        const generationConfig: any = {};
+        
+        if (request.responseFormat?.type === 'json_schema') {
+            generationConfig.responseMimeType = "application/json";
+            
+            // Map OpenAI JSON schema to Gemini Schema
+            // OpenAI: { name: "...", schema: { type: "object", properties: ... } }
+            // Gemini expects the schema object directly
+            
+            const openAISchema = request.responseFormat.json_schema.schema;
+            
+            // We need to recursively map the types because Gemini uses uppercase enums
+            // SchemaType.OBJECT, SchemaType.STRING, etc.
+            // But the SDK also accepts string types "OBJECT", "STRING" etc.
+            // Let's implement a simple converter or pass it if compatible.
+            // Zod-to-json-schema produces lowercase types ("object", "string").
+            // Google's SDK might need them to be uppercase or mapped.
+            
+            // Helper to clean up schema for Gemini
+            // Removes $schema, strict, and additionalProperties if not supported or formatted differently
+            // And maps 'type' to uppercase.
+            const mapSchema = (s: any): any => {
+                if (!s) return undefined;
+                
+                const newSchema: any = { ...s };
+                
+                if (newSchema.type) {
+                    newSchema.type = (typeof newSchema.type === 'string') 
+                        ? (newSchema.type as string).toUpperCase() 
+                        : newSchema.type;
+                }
+                
+                if (newSchema.properties) {
+                    const newProps: any = {};
+                    for (const [key, val] of Object.entries(newSchema.properties)) {
+                        newProps[key] = mapSchema(val);
+                    }
+                    newSchema.properties = newProps;
+                }
+                
+                if (newSchema.items) {
+                    newSchema.items = mapSchema(newSchema.items);
+                }
+                
+                // Remove unsupported OpenAI-specific fields if Gemini complains
+                delete newSchema.additionalProperties;
+                delete newSchema['$schema'];
+                
+                return newSchema;
+            };
+            
+            generationConfig.responseSchema = mapSchema(openAISchema);
+        }
+
         // Gemini format: system instruction is separate, history is separate from last message
         // generateContent accepts a string or parts.
         
@@ -32,7 +87,8 @@ export class GeminiProvider implements Provider {
         
         const configuredModel = genAI.getGenerativeModel({ 
             model: modelName,
-            systemInstruction: systemInstruction ? systemInstruction.trim() : undefined
+            systemInstruction: systemInstruction ? systemInstruction.trim() : undefined,
+            generationConfig
         });
 
         // Build history/messages

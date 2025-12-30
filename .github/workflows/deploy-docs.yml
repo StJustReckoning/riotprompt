@@ -3,6 +3,8 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches: [ main ]
+  release:
+    types: [ published ]
   # Allow manual triggering
   workflow_dispatch:
 

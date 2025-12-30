@@ -2,8 +2,6 @@
 
 Welcome to RiotPrompt - a structured prompt engineering library for LLMs that helps you organize your prompts efficiently.
 
-> "I don't wanna hear it, know you're full of sh*t" - Minor Threat
-
 ## Installation
 
 Install RiotPrompt via npm:

@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "keywords": [
     "prompt",
     "llm",
@@ -84,6 +84,7 @@
     "marked": "^16.0.0",
     "openai": "^6.15.0",
     "tiktoken": "^1.0.22",
-    "zod": "^4.0.2"
+    "zod": "^4.0.2",
+    "zod-to-json-schema": "^3.25.1"
   }
 }
