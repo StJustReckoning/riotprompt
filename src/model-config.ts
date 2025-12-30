@@ -61,24 +61,14 @@ export class ModelRegistry {
      * Register default model configurations
      */
     private registerDefaults(): void {
-        // GPT-4 family (uses 'system' role)
+        // Default fallback (Registered first so it ends up last with unshift)
         this.register({
-            pattern: /^gpt-4/i,
+            pattern: /.*/,  // Matches anything
             personaRole: 'system',
             encoding: 'gpt-4o',
             supportsToolCalls: true,
-            family: 'gpt-4',
-            description: 'GPT-4 family models'
-        });
-
-        // O-series models (uses 'developer' role)
-        this.register({
-            pattern: /^o\d+/i,  // Matches o1, o2, o3, o4, etc.
-            personaRole: 'developer',
-            encoding: 'gpt-4o',
-            supportsToolCalls: true,
-            family: 'o-series',
-            description: 'O-series reasoning models'
+            family: 'unknown',
+            description: 'Default fallback configuration'
         });
 
         // Claude family (uses 'system' role)
@@ -91,14 +81,24 @@ export class ModelRegistry {
             description: 'Claude family models'
         });
 
-        // Default fallback
+        // O-series models (uses 'developer' role)
         this.register({
-            pattern: /.*/,  // Matches anything
+            pattern: /^o\d+/i,  // Matches o1, o2, o3, o4, etc.
+            personaRole: 'developer',
+            encoding: 'gpt-4o',
+            supportsToolCalls: true,
+            family: 'o-series',
+            description: 'O-series reasoning models'
+        });
+
+        // GPT-4 family (uses 'system' role)
+        this.register({
+            pattern: /^gpt-4/i,
             personaRole: 'system',
             encoding: 'gpt-4o',
             supportsToolCalls: true,
-            family: 'unknown',
-            description: 'Default fallback configuration'
+            family: 'gpt-4',
+            description: 'GPT-4 family models'
         });
 
         this.logger.debug('Registered default model configurations');
@@ -107,6 +107,7 @@ export class ModelRegistry {
     /**
      * Register a model configuration
      * Configs are checked in registration order (first match wins)
+     * New configs are added to the beginning of the list (high priority)
      */
     register(config: ModelConfig): void {
         // Validate config
@@ -114,7 +115,7 @@ export class ModelRegistry {
             throw new Error('Model config must have either pattern or exactMatch');
         }
 
-        this.configs.push(config);
+        this.configs.unshift(config);
         this.cache.clear(); // Clear cache when new config is added
 
         this.logger.debug('Registered model config', {
