@@ -1,8 +1,8 @@
-# 🎯 Template Configuration: Automatic File Loading
+# Template Configuration: Automatic File Loading
 
 The RiotPrompt Recipes system supports **automatic file loading** through configurable templates. Once configured, templates like `'commit'` and `'release'` automatically load your persona and instruction files without any manual path configuration.
 
-## 🚀 Quick Setup for KodrDriv
+## Quick Setup for KodrDriv
 
 ### 1. Configure Your Templates Once
 
@@ -31,7 +31,7 @@ Once configured, **all template usage automatically loads your files**:
 ```typescript
 import { cook, recipe } from '@riotprompt/riotprompt';
 
-// ✨ All these automatically include your persona & instruction files:
+// All these automatically include your persona & instruction files:
 
 // Configuration-driven approach
 const prompt1 = await cook({
@@ -42,12 +42,12 @@ const prompt1 = await cook({
 
 // Recipe builder (fluent API)
 const prompt2 = await recipe(__dirname)
-  .template('commit')  // 🎯 Automatically loads your configured files!
+  .template('commit')  // Automatically loads your configured files!
   .content({ content: diffContent, title: 'Diff' })
   .cook();
 ```
 
-## 🎨 Template Configuration Options
+## Template Configuration Options
 
 ### Full Configuration Example
 
@@ -124,7 +124,7 @@ Each template section accepts flexible content items:
 }
 ```
 
-## 🔄 Runtime Template Management
+## Runtime Template Management
 
 ### Check Current Templates
 
@@ -158,7 +158,7 @@ registerTemplates({
 });
 ```
 
-## 🎯 Migration Guide: Builder → Templates
+## Migration Guide: Builder to Templates
 
 ### Before (Builder Pattern)
 
@@ -216,7 +216,7 @@ const createCommitPrompt = (diffContent, options) =>
   });
 ```
 
-## 🔍 Template Resolution Order
+## Template Resolution Order
 
 When using templates, the system resolves content in this priority order:
 
@@ -243,7 +243,7 @@ const prompt = await cook({
 // Result: Template files + User content combined!
 ```
 
-## ✨ Best Practices
+## Best Practices
 
 ### 1. **Setup Once, Use Everywhere**
 Configure templates in your application initialization, then use simple template calls throughout your codebase.
@@ -302,7 +302,7 @@ registerTemplates({
 
 ---
 
-## 🎉 Result: 90%+ Code Reduction
+## Result: 90%+ Code Reduction
 
 **Before**: 50+ lines of manual Builder configuration per prompt type
 **After**: 1-3 lines using configured templates

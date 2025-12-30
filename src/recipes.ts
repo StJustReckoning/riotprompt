@@ -1,5 +1,7 @@
 import path from "path";
+import fs from "fs/promises";
 import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
 import { Model } from "./chat";
 import { ConversationBuilder } from "./conversation";
 import { ParametersSchema } from "./items/parameters";
@@ -45,6 +47,16 @@ const RecipeConfigSchema = z.object({
     content: z.array(ContentItemSchema).optional().default([]),
     context: z.array(ContentItemSchema).optional().default([]),
 
+    // Advanced prompting sections
+    constraints: z.array(ContentItemSchema).optional().default([]),
+    tone: z.array(ContentItemSchema).optional().default([]),
+    examples: z.array(ContentItemSchema).optional().default([]),
+    reasoning: z.array(ContentItemSchema).optional().default([]),
+    responseFormat: z.array(ContentItemSchema).optional().default([]),
+    recap: z.array(ContentItemSchema).optional().default([]),
+    safeguards: z.array(ContentItemSchema).optional().default([]),
+    schema: z.any().optional(), // Can be string path, JSON object, or Zod schema
+
     // Templates and inheritance
     extends: z.string().optional(), // Extend another recipe
     template: z.string().optional(), // Generic template name
@@ -82,6 +94,14 @@ export interface TemplateConfig {
     instructions?: ContentItem[];
     content?: ContentItem[];
     context?: ContentItem[];
+    constraints?: ContentItem[];
+    tone?: ContentItem[];
+    examples?: ContentItem[];
+    reasoning?: ContentItem[];
+    responseFormat?: ContentItem[];
+    recap?: ContentItem[];
+    safeguards?: ContentItem[];
+    schema?: string | Record<string, any> | z.ZodType<any>;
     tools?: Tool[] | ToolRegistry;
     toolGuidance?: Partial<ToolGuidanceConfig> | 'auto' | 'minimal' | 'detailed';
 }
@@ -240,6 +260,13 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
         instructions: [],
         content: [],
         context: [],
+        constraints: [],
+        tone: [],
+        examples: [],
+        reasoning: [],
+        responseFormat: [],
+        recap: [],
+        safeguards: [],
         ...config
     });
 
@@ -263,6 +290,35 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
                     ...(template.context || []),
                     ...(validatedConfig.context || [])
                 ],
+                constraints: [
+                    ...(template.constraints || []),
+                    ...(validatedConfig.constraints || [])
+                ],
+                tone: [
+                    ...(template.tone || []),
+                    ...(validatedConfig.tone || [])
+                ],
+                examples: [
+                    ...(template.examples || []),
+                    ...(validatedConfig.examples || [])
+                ],
+                reasoning: [
+                    ...(template.reasoning || []),
+                    ...(validatedConfig.reasoning || [])
+                ],
+                responseFormat: [
+                    ...(template.responseFormat || []),
+                    ...(validatedConfig.responseFormat || [])
+                ],
+                recap: [
+                    ...(template.recap || []),
+                    ...(validatedConfig.recap || [])
+                ],
+                safeguards: [
+                    ...(template.safeguards || []),
+                    ...(validatedConfig.safeguards || [])
+                ],
+                schema: validatedConfig.schema || template.schema,
             };
         }
     }
@@ -282,6 +338,33 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
     const instructionSection: Section<Instruction> = createSection({ title: "Instruction" });
     const contentSection: Section<Content> = createSection({ title: "Content" });
     const contextSection: Section<Context> = createSection({ title: "Context" });
+    
+    // Advanced sections
+    const constraintSection: Section<Instruction> = createSection({ title: "Constraints" });
+    const toneSection: Section<Instruction> = createSection({ title: "Tone" });
+    const exampleSection: Section<Content> = createSection({ title: "Examples" });
+    const reasoningSection: Section<Instruction> = createSection({ title: "Reasoning" });
+    const responseFormatSection: Section<Instruction> = createSection({ title: "Response Format" });
+    const recapSection: Section<Instruction> = createSection({ title: "Recap" });
+    const safeguardSection: Section<Instruction> = createSection({ title: "Safeguards" });
+
+    // Helper for processing list items
+    const processList = async <T extends Weighted>(
+        items: ContentItem[],
+        section: Section<T>,
+        type: 'persona' | 'instruction' | 'content' | 'context'
+    ) => {
+        for (const item of items) {
+            await processContentItem(item, section, type, {
+                basePath: finalConfig.basePath,
+                parser,
+                override,
+                loader,
+                parameters: finalConfig.parameters,
+                logger
+            });
+        }
+    };
 
     // Process persona
     if (finalConfig.persona) {
@@ -295,17 +378,19 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
         });
     }
 
-    // Process instructions
-    for (const item of finalConfig.instructions || []) {
-        await processContentItem(item, instructionSection, 'instruction', {
-            basePath: finalConfig.basePath,
-            parser,
-            override,
-            loader,
-            parameters: finalConfig.parameters,
-            logger
-        });
-    }
+    // Process standard sections
+    await processList(finalConfig.instructions || [], instructionSection, 'instruction');
+    await processList(finalConfig.content || [], contentSection, 'content');
+    await processList(finalConfig.context || [], contextSection, 'context');
+
+    // Process advanced sections
+    await processList(finalConfig.constraints || [], constraintSection, 'instruction');
+    await processList(finalConfig.tone || [], toneSection, 'instruction');
+    await processList(finalConfig.examples || [], exampleSection, 'content');
+    await processList(finalConfig.reasoning || [], reasoningSection, 'instruction');
+    await processList(finalConfig.responseFormat || [], responseFormatSection, 'instruction');
+    await processList(finalConfig.recap || [], recapSection, 'instruction');
+    await processList(finalConfig.safeguards || [], safeguardSection, 'instruction');
 
     // Generate tool guidance if tools are provided
     if (finalConfig.tools) {
@@ -325,36 +410,66 @@ export const cook = async (config: Partial<RecipeConfig> & { basePath: string })
         }
     }
 
-    // Process content
-    for (const item of finalConfig.content || []) {
-        await processContentItem(item, contentSection, 'content', {
-            basePath: finalConfig.basePath,
-            parser,
-            override,
-            loader,
-            parameters: finalConfig.parameters,
-            logger
-        });
-    }
+    // Process schema
+    let schema = finalConfig.schema;
+    let validator: any = undefined;
 
-    // Process context
-    for (const item of finalConfig.context || []) {
-        await processContentItem(item, contextSection, 'context', {
-            basePath: finalConfig.basePath,
-            parser,
-            override,
-            loader,
-            parameters: finalConfig.parameters,
-            logger
-        });
+    if (schema instanceof z.ZodType) {
+        // It's a Zod schema!
+        validator = schema;
+        const jsonSchema = zodToJsonSchema(schema, "response");
+        
+        // Wrap in OpenAI Structured Output format
+        // zod-to-json-schema returns { "$schema": "...", "definitions": { "response": { ... } }, "$ref": "#/definitions/response" }
+        // We need to extract the schema part.
+        
+        // Simpler usage for OpenAI: just get the schema object.
+        // Actually, zod-to-json-schema produces a full JSON schema object.
+        // OpenAI expects: { type: "json_schema", json_schema: { name: "...", schema: ... } }
+        
+        // Let's create a clean schema object
+        // NOTE: OpenAI requires strict: true and additionalProperties: false
+        // zod-to-json-schema generally produces compatible schemas but strictness might need tweaking if required by OpenAI.
+        // For now, let's assume "response" as the name.
+        
+        // We'll define a simpler conversion if possible, or trust the user to configure Zod strictly if they want strict mode.
+        
+        // Extract the definition if it exists
+        const actualSchema = (jsonSchema as any).definitions?.response || jsonSchema;
+        
+        schema = {
+            type: "json_schema",
+            json_schema: {
+                name: "response",
+                schema: actualSchema,
+                strict: true // Try to enable strict mode for OpenAI
+            }
+        };
+    } else if (typeof schema === 'string') {
+        const schemaPath = path.resolve(finalConfig.basePath, schema);
+        try {
+            const schemaContent = await fs.readFile(schemaPath, 'utf-8');
+            schema = JSON.parse(schemaContent);
+        } catch (e: any) {
+            throw new Error(`Failed to load schema from ${schemaPath}: ${e.message}`);
+        }
     }
 
     // Build and return prompt
     return createPrompt({
-        persona: personaSection,
+        persona: personaSection.items.length > 0 ? personaSection : undefined,
         instructions: instructionSection,
-        contents: contentSection,
-        contexts: contextSection
+        contents: contentSection.items.length > 0 ? contentSection : undefined,
+        contexts: contextSection.items.length > 0 ? contextSection : undefined,
+        constraints: constraintSection.items.length > 0 ? constraintSection : undefined,
+        tone: toneSection.items.length > 0 ? toneSection : undefined,
+        examples: exampleSection.items.length > 0 ? exampleSection : undefined,
+        reasoning: reasoningSection.items.length > 0 ? reasoningSection : undefined,
+        responseFormat: responseFormatSection.items.length > 0 ? responseFormatSection : undefined,
+        recap: recapSection.items.length > 0 ? recapSection : undefined,
+        safeguards: safeguardSection.items.length > 0 ? safeguardSection : undefined,
+        schema,
+        validator,
     });
 };
 
@@ -440,6 +555,38 @@ export const recipe = (basePath: string) => {
         },
         context: (...context: ContentItem[]) => {
             config.context = [...(config.context || []), ...context];
+            return builder;
+        },
+        constraints: (...constraints: ContentItem[]) => {
+            config.constraints = [...(config.constraints || []), ...constraints];
+            return builder;
+        },
+        tone: (...tone: ContentItem[]) => {
+            config.tone = [...(config.tone || []), ...tone];
+            return builder;
+        },
+        examples: (...examples: ContentItem[]) => {
+            config.examples = [...(config.examples || []), ...examples];
+            return builder;
+        },
+        reasoning: (...reasoning: ContentItem[]) => {
+            config.reasoning = [...(config.reasoning || []), ...reasoning];
+            return builder;
+        },
+        responseFormat: (...responseFormat: ContentItem[]) => {
+            config.responseFormat = [...(config.responseFormat || []), ...responseFormat];
+            return builder;
+        },
+        recap: (...recap: ContentItem[]) => {
+            config.recap = [...(config.recap || []), ...recap];
+            return builder;
+        },
+        safeguards: (...safeguards: ContentItem[]) => {
+            config.safeguards = [...(config.safeguards || []), ...safeguards];
+            return builder;
+        },
+        schema: (schema: string | Record<string, any> | z.ZodType<any>) => {
+            config.schema = schema;
             return builder;
         },
         parameters: (parameters: any) => {

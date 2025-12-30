@@ -14,25 +14,25 @@ WeightedText forms the foundation for all content types in RiotPrompt, allowing 
 
 RiotPrompt organizes prompts into four main categories:
 
-### 1. Personas 👤
+### 1. Personas
 Define who the LLM should be:
 - **`name`**: The persona's identifier
 - **`traits`**: Characteristics the persona should embody (e.g., "You are a developer working on a project who needs to create a commit message")
 - **`instructions`**: Specific guidance for the persona
 
-### 2. Instructions 📋
+### 2. Instructions
 Tell the LLM how to respond:
 - General guidelines for response format, tone, etc.
 - Specific task-oriented instructions
 - Behavioral guidelines
 
-### 3. Content 📄
+### 3. Content
 What the LLM should respond to:
 - The actual query or task
 - Input data or context
 - Questions to be answered
 
-### 4. Context 🔍
+### 4. Context
 Provide background information:
 - Additional context that helps the LLM understand the request
 - Domain-specific knowledge

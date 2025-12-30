@@ -44,9 +44,10 @@ describe('Recipes System', () => {
 
             expect(prompt).toBeDefined();
             expect(prompt.instructions).toBeDefined();
-            expect(prompt.contents).toBeDefined();
-            expect(prompt.persona).toBeDefined();
-            expect(prompt.contexts).toBeDefined();
+            // Optional sections are undefined when not provided
+            expect(prompt.contents).toBeUndefined();
+            expect(prompt.persona).toBeUndefined();
+            expect(prompt.contexts).toBeUndefined();
         });
 
         it('should create a prompt with full configuration', async () => {

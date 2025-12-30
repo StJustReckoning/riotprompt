@@ -9,7 +9,7 @@ A powerful, flexible prompt building library and CLI tool for AI applications wi
 - **Model Alignment**: Automatically adapts prompt structure to match the specific expectations of each model provider:
     - **Anthropic (Claude)**: Places Personas, Roles, Tone, and Constraints into the `system` parameter. Additionally, converts `schema` definitions into forced **Tool Use** calls, extracting structured results to match OpenAI's output format.
     - **OpenAI**: Maps generic roles to the appropriate `system` or `developer` (for O-series) messages.
-    - **Gemini**: Structurally adapts components into System Instructions and content parts. For structured outputs, it automatically transforms JSON schemas into Gemini's `responseSchema` format, ensuring strict adherence to the defined structure.
+    - **Gemini**: Structurally adapts components into System Instructions and content parts, supporting the rich prompt components recommended in [Gemini's Prompt Design Strategies](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/prompt-design-strategies).
 - **CLI Tool**: Scaffold, manage, process, and **execute** prompts directly from the terminal.
 - **Model Agnostic**: Format prompts for different models (GPT-4, Claude, Gemini, etc.) automatically.
 - **Execution Engine**: Run prompts against OpenAI, Anthropic, or Gemini APIs directly.
@@ -156,9 +156,8 @@ const analysisPrompt = await cook({
 
 ## Documentation
 
-Full documentation is available at [https://tobrien.github.io/riotprompt/](https://tobrien.github.io/riotprompt/).
+For more detailed guides on architecture and advanced usage, check the [Guide](guide/index.md).
 
-You can also explore the guides in the source:
 - [Core Concepts](docs/public/core-concepts.md)
 - [Recipes System](docs/public/recipes.md)
 - [API Reference](docs/public/api-reference.md)

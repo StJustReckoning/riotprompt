@@ -30,13 +30,32 @@ export class AnthropicProvider implements Provider {
             model: model,
             system: systemPrompt.trim() || undefined,
             messages: messages,
-            max_tokens: options.maxTokens || 4096, // Anthropic requires max_tokens
+            max_tokens: options.maxTokens || 4096,
             temperature: options.temperature,
+            ...(request.responseFormat?.type === 'json_schema' ? {
+                tools: [{
+                    name: request.responseFormat.json_schema.name,
+                    description: request.responseFormat.json_schema.description || "Output data in this structured format",
+                    input_schema: request.responseFormat.json_schema.schema
+                }],
+                tool_choice: { type: 'tool', name: request.responseFormat.json_schema.name }
+            } : {})
         });
 
         // Handle ContentBlock
-        const contentBlock = response.content[0];
-        const text = contentBlock.type === 'text' ? contentBlock.text : '';
+        // Check for tool_use first if we requested structured output
+        let text = '';
+        
+        if (request.responseFormat?.type === 'json_schema') {
+            const toolUseBlock = response.content.find(block => block.type === 'tool_use');
+            if (toolUseBlock && toolUseBlock.type === 'tool_use') {
+                // Return the structured data as a JSON string to match OpenAI behavior
+                text = JSON.stringify(toolUseBlock.input, null, 2);
+            }
+        } else {
+            const contentBlock = response.content[0];
+            text = contentBlock.type === 'text' ? contentBlock.text : '';
+        }
 
         return {
             content: text,

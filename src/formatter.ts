@@ -139,26 +139,62 @@ export const create = (formatterOptions?: OptionsParam): Instance => {
         logger.silly('Formatting prompt');
         const chatRequest: Chat.Request = Chat.createRequest(model);
 
-        if (prompt.persona) {
-            [prompt.persona].forEach((persona: Section<Instruction>) => {
-                chatRequest.addMessage(formatPersona(model, persona));
+        // --- System/Role Message Construction ---
+        // Collect sections that belong in the system/developer prompt (Persona, Tone, Constraints, etc.)
+        const systemSections: Section<Instruction>[] = [];
+        if (prompt.persona) systemSections.push(prompt.persona);
+        if (prompt.tone) systemSections.push(prompt.tone);
+        if (prompt.constraints) systemSections.push(prompt.constraints);
+        if (prompt.safeguards) systemSections.push(prompt.safeguards);
+        if (prompt.responseFormat) systemSections.push(prompt.responseFormat);
+
+        if (systemSections.length > 0) {
+            // Combine all system sections into one system message content
+            const systemContent = systemSections
+                .map(section => formatSection(section))
+                .join('\n\n');
+            
+            chatRequest.addMessage({
+                role: getPersonaRole(model),
+                content: systemContent
             });
         }
 
-        let formattedAreas: string = formatSection(prompt.instructions) + '\n\n';
+        // --- User/Task Message Construction ---
+        // Logical flow: Context -> Examples -> Instructions -> Content -> Reasoning -> Recap
+        // This structure guides the model through the context and examples before presenting the core task
+        const userSections: (Section<any> | undefined)[] = [
+            prompt.contexts,
+            prompt.examples,
+            prompt.instructions,
+            prompt.contents,
+            prompt.reasoning,
+            prompt.recap
+        ];
 
-        if (prompt.contents) {
-            formattedAreas += formatSection(prompt.contents) + '\n\n';
+        let formattedUserContent = "";
+        
+        for (const section of userSections) {
+            if (section) {
+                formattedUserContent += formatSection(section) + '\n\n';
+            }
         }
 
-        if (prompt.contexts) {
-            formattedAreas += formatSection(prompt.contexts) + '\n\n';
+        // Ensure we always have a user message, or if we have content to send
+        if (formattedUserContent.trim().length > 0 || systemSections.length === 0) {
+            chatRequest.addMessage({
+                role: "user",
+                content: formattedUserContent.trim() || " ", // Empty user message if needed (though usually not ideal)
+            });
         }
 
-        chatRequest.addMessage({
-            role: "user",
-            content: formattedAreas,
-        });
+        if (prompt.schema) {
+            chatRequest.responseFormat = prompt.schema;
+        }
+
+        if (prompt.validator) {
+            chatRequest.validator = prompt.validator;
+        }
 
         return chatRequest;
     }

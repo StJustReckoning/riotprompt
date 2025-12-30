@@ -14,6 +14,8 @@ export interface Message {
 export interface Request {
     messages: Message[];
     model: Model;
+    responseFormat?: any; // Generic to support different provider formats (JSON schema, etc.)
+    validator?: any; // Zod schema for validation
 
     addMessage(message: Message): void;
 }
@@ -28,6 +30,8 @@ export const createRequest = (model: Model): Request => {
     return {
         model,
         messages,
+        responseFormat: undefined,
+        validator: undefined,
         addMessage: (message: Message) => {
             messages.push(message);
         }

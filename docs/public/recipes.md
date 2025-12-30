@@ -1,10 +1,10 @@
-# 🚀 RiotPrompt Recipes: Generic Prompt Creation System
+# RiotPrompt Recipes: Generic Prompt Creation System
 
 The **Recipes** system provides a powerful, declarative way to create prompts with RiotPrompt. Instead of verbose builder patterns, you can now create prompts using simple configuration objects.
 
-## 📊 The Revolution: Before vs After
+## The Revolution: Before vs After
 
-### ❌ Old Builder Approach (25+ lines)
+### Old Builder Approach (25+ lines)
 ```typescript
 let builder: Builder.Instance = Builder.create({
   basePath: __dirname,
@@ -34,7 +34,7 @@ if (directories?.length) {
 return await builder.build();
 ```
 
-### ✅ New Recipes Approach (1-5 lines!)
+### New Recipes Approach (1-5 lines!)
 ```typescript
 // Simple configuration-driven approach
 return cook({
@@ -51,7 +51,7 @@ return cook({
 });
 ```
 
-## 🎯 Key Benefits
+## Key Benefits
 
 - **80-95% Less Code**: Reduce 25+ lines to just 1-5 lines
 - **Zero Boilerplate**: No more manual builder chaining
@@ -61,7 +61,7 @@ return cook({
 - **Smart Defaults**: Reasonable defaults reduce configuration
 - **Completely Generic**: No hardcoded domain concepts
 
-## 🛠️ Core API
+## Core API
 
 ### Basic Usage
 
@@ -154,7 +154,7 @@ const customPrompt = await recipe(__dirname)
   .cook();
 ```
 
-## 🔧 Override Configuration
+## Override Configuration
 
 The recipes system fully supports RiotPrompt's override system:
 
@@ -172,7 +172,7 @@ const prompt = await cook({
 });
 ```
 
-## 🎨 Content Item Types
+## Content Item Types
 
 The recipes system supports flexible content specification:
 
@@ -202,7 +202,7 @@ The recipes system supports flexible content specification:
 }
 ```
 
-## 📝 Template Management
+## Template Management
 
 ```typescript
 import { registerTemplates, getTemplates, clearTemplates } from 'riotprompt';
@@ -222,19 +222,19 @@ const templates = getTemplates();
 clearTemplates();
 ```
 
-## 🔄 Migration Guide
+## Migration Guide
 
 Replace your existing Builder code:
 
 ```typescript
-// OLD WAY ❌
+// OLD WAY
 let builder = Builder.create({ basePath: __dirname });
 builder = await builder.addPersonaPath('persona.md');
 builder = await builder.addInstructionPath('instructions.md');
 builder = await builder.addContent(content, { title: 'Content' });
 const prompt = await builder.build();
 
-// NEW WAY ✅
+// NEW WAY
 const prompt = await cook({
   basePath: __dirname,
   persona: { path: 'persona.md' },
@@ -243,7 +243,7 @@ const prompt = await cook({
 });
 ```
 
-## 💡 Example Use Cases
+## Example Use Cases
 
 ### Code Analysis
 ```typescript
@@ -302,7 +302,7 @@ const prompt = await cook({
 });
 ```
 
-## 🌟 Why Recipes?
+## Why Recipes?
 
 The name "Recipes" reflects the cooking metaphor:
 - **Ingredients**: Your content, context, and instructions
