@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "keywords": [
     "prompt",
     "llm",
@@ -14,7 +14,7 @@
   "types": "./dist/riotprompt.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tobrien/riotprompt"
+    "url": "git+https://github.com/kjerneverk/riotprompt"
   },
   "exports": {
     ".": {

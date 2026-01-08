@@ -693,7 +693,7 @@ const report = await executeChat(reportPrompt, { model: 'gpt-4o' });
 ### Get Help
 
 - **[API Reference](api-reference)** - Complete API documentation
-- **[GitHub Issues](https://github.com/tobrien/riotprompt/issues)** - Report bugs or request features
+- **[GitHub Issues](https://github.com/kjerneverk/riotprompt/issues)** - Report bugs or request features
 - **[CLI Reference](cli-usage)** - Complete command-line documentation
 
 ### Join the Community

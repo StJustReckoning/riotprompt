@@ -370,7 +370,7 @@ npx riotprompt execute my-prompt -t 0.8
 
 - **[CLI Usage](cli-usage)** - Complete CLI reference
 - **[Complete Tutorial](tutorial)** - In-depth guide
-- **[GitHub Issues](https://github.com/tobrien/riotprompt/issues)** - Report bugs or request features
+- **[GitHub Issues](https://github.com/kjerneverk/riotprompt/issues)** - Report bugs or request features
 - **[API Documentation](api-reference)** - Programmatic usage
 
 ---
