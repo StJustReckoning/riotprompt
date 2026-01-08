@@ -142,7 +142,7 @@ const prompt = await cook({
   })
 });
 
-// Learn more: https://tobrien.github.io/riotprompt/structured-outputs
+// Learn more: https://kjerneverk.github.io/riotprompt/structured-outputs
 
 // Register and use templates
 registerTemplates({

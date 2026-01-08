@@ -156,7 +156,7 @@ const analysisPrompt = await cook({
 
 ## Documentation
 
-Full documentation is available at [https://tobrien.github.io/riotprompt/](https://tobrien.github.io/riotprompt/).
+Full documentation is available at [https://kjerneverk.github.io/riotprompt/](https://kjerneverk.github.io/riotprompt/).
 
 You can also explore the guides in the source:
 - [Core Concepts](docs/public/core-concepts.md)
