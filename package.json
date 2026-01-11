@@ -14,7 +14,7 @@
   "types": "./dist/riotprompt.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kjerneverk/riotprompt"
+    "url": "https://github.com/kjerneverk/riotprompt"
   },
   "exports": {
     ".": {
@@ -73,8 +73,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
-    "@google/generative-ai": "^0.24.1",
     "@theunwalked/cardigantime": "^0.0.17",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
@@ -82,9 +80,29 @@
     "glob": "^11.0.3",
     "js-yaml": "^4.1.1",
     "marked": "^16.0.0",
-    "openai": "^6.15.0",
     "tiktoken": "^1.0.22",
     "zod": "^4.0.2",
     "zod-to-json-schema": "^3.25.1"
+  },
+  "peerDependencies": {
+    "@riotprompt/execution": "^0.0.1",
+    "@riotprompt/execution-openai": "^0.0.1",
+    "@riotprompt/execution-anthropic": "^0.0.1",
+    "@riotprompt/execution-gemini": "^0.0.1",
+    "@riotprompt/agentic": "^0.0.1",
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@google/generative-ai": "^0.24.1",
+    "openai": "^6.15.0",
+    "tiktoken": "^1.0.22"
+  },
+  "peerDependenciesMeta": {
+    "@riotprompt/execution": { "optional": true },
+    "@riotprompt/execution-openai": { "optional": true },
+    "@riotprompt/execution-anthropic": { "optional": true },
+    "@riotprompt/execution-gemini": { "optional": true },
+    "@riotprompt/agentic": { "optional": true },
+    "@anthropic-ai/sdk": { "optional": true },
+    "@google/generative-ai": { "optional": true },
+    "openai": { "optional": true }
   }
 }

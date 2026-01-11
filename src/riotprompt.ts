@@ -1,3 +1,18 @@
+/**
+ * RiotPrompt - Structured Prompt Engineering for LLMs
+ *
+ * Note: Many components are now available as separate packages for lighter installs:
+ * - `execution` - Provider interfaces (no SDK deps)
+ * - `execution-openai` - OpenAI provider
+ * - `execution-anthropic` - Anthropic provider
+ * - `execution-gemini` - Gemini provider
+ * - `agentic` - Tool registry, context management
+ *
+ * This main package re-exports everything for backward compatibility.
+ *
+ * @packageDocumentation
+ */
+
 // Export functions
 export { create as createContent } from "./items/content";
 export { create as createContext } from "./items/context";
