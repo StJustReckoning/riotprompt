@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.19-dev.0",
+  "version": "0.0.19",
   "keywords": [
     "prompt",
     "llm",
@@ -99,13 +99,29 @@
     "tiktoken": "^1.0.22"
   },
   "peerDependenciesMeta": {
-    "@riotprompt/execution": { "optional": true },
-    "@riotprompt/execution-openai": { "optional": true },
-    "@riotprompt/execution-anthropic": { "optional": true },
-    "@riotprompt/execution-gemini": { "optional": true },
-    "@riotprompt/agentic": { "optional": true },
-    "@anthropic-ai/sdk": { "optional": true },
-    "@google/generative-ai": { "optional": true },
-    "openai": { "optional": true }
+    "@riotprompt/execution": {
+      "optional": true
+    },
+    "@riotprompt/execution-openai": {
+      "optional": true
+    },
+    "@riotprompt/execution-anthropic": {
+      "optional": true
+    },
+    "@riotprompt/execution-gemini": {
+      "optional": true
+    },
+    "@riotprompt/agentic": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@google/generative-ai": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
   }
 }
