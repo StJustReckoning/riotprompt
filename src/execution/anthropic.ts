@@ -47,7 +47,7 @@ export class AnthropicProvider implements Provider {
         let text = '';
         
         if (request.responseFormat?.type === 'json_schema') {
-            const toolUseBlock = response.content.find(block => block.type === 'tool_use');
+            const toolUseBlock = response.content.find((block: Anthropic.ContentBlock) => block.type === 'tool_use');
             if (toolUseBlock && toolUseBlock.type === 'tool_use') {
                 // Return the structured data as a JSON string to match OpenAI behavior
                 text = JSON.stringify(toolUseBlock.input, null, 2);
