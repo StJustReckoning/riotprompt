@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../agentic"
+		},
+		{
+			"path": "../execution"
+		},
+		{
+			"path": "../execution-anthropic"
+		},
+		{
+			"path": "../execution-gemini"
+		},
+		{
+			"path": "../execution-openai"
+		},
+		{
+			"path": "../riotplan"
+		},
+		{
+			"path": "../riotplan-cli"
+		},
+		{
+			"path": "../riotprompt-cli"
+		}
+	],
+	"settings": {}
+}

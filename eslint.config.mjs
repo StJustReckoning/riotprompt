@@ -65,8 +65,8 @@ export default defineConfig([
 
             "import/no-extraneous-dependencies": ["error", {
                 devDependencies: true,
-                optionalDependencies: false,
-                peerDependencies: false,
+                optionalDependencies: true,
+                peerDependencies: true,
             }],
 
             "no-console": ["error"],
