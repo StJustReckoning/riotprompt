@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.20",
+  "version": "0.0.21-dev.0",
   "keywords": [
     "prompt",
     "llm",
