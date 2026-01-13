@@ -1,12 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 import { Weighted } from '../../src/items/weighted'; // Assuming Weighted is in src/items/
 import { create } from '../../src/parser'; // Assuming parser is in src/
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = import.meta.dirname;
 
 describe('Markdown Parser Integration Test', () => {
 

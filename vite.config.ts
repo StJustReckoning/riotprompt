@@ -1,11 +1,8 @@
 import { defineConfig } from 'vite';
 import { VitePluginNode } from 'vite-plugin-node';
 import replace from '@rollup/plugin-replace';
-// import { visualizer } from 'rollup-plugin-visualizer';
 import { execSync } from 'child_process';
-import shebang from 'rollup-plugin-preserve-shebang';
 import dts from 'vite-plugin-dts';
-import path from 'path';
 
 let gitInfo = {
     branch: '',
@@ -39,7 +36,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './src')
+            '@': new URL('./src', import.meta.url).pathname
         }
     },
     plugins: [
@@ -52,11 +49,6 @@ export default defineConfig({
                 sourceMaps: true,
             },
         }),
-        // visualizer({
-        //     template: 'network',
-        //     filename: 'network.html',
-        //     projectRoot: process.cwd(),
-        // }),
         replace({
             '__VERSION__': process.env.npm_package_version,
             '__GIT_BRANCH__': gitInfo.branch,
@@ -78,8 +70,8 @@ export default defineConfig({
         outDir: 'dist',
         lib: {
             entry: './src/riotprompt.ts',
-            formats: ['es', 'cjs'],
-            fileName: (format) => `riotprompt.${format === 'es' ? 'js' : 'cjs'}`,
+            formats: ['es'],
+            fileName: () => 'riotprompt.js',
         },
         rollupOptions: {
             external: [
@@ -87,28 +79,15 @@ export default defineConfig({
                 '@riotprompt/formatter',
                 '@riotprompt/chat'
             ],
-            output: [
-                {
-                    format: 'esm',
-                    entryFileNames: '[name].js',
-                    preserveModules: true,
-                    exports: 'named',
-                },
-                {
-                    format: 'cjs',
-                    entryFileNames: '[name].cjs',
-                    preserveModules: false,
-                    exports: 'named',
-                }
-            ],
-            plugins: [
-                shebang({
-                    shebang: '#!/usr/bin/env node',
-                }),
-            ],
+            output: {
+                format: 'esm',
+                entryFileNames: '[name].js',
+                preserveModules: true,
+                exports: 'named',
+            },
         },
         modulePreload: false,
         minify: false,
         sourcemap: true
     },
-}); 
+});

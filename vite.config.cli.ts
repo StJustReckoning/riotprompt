@@ -1,35 +1,32 @@
 import { defineConfig } from 'vite';
-import path from 'path';
-import shebang from 'rollup-plugin-preserve-shebang';
 
 export default defineConfig({
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './src')
+            '@': new URL('./src', import.meta.url).pathname
         }
     },
     build: {
-        target: 'node18',
-        ssr: true, // Enable SSR mode for Node.js build
+        target: 'node24',
+        ssr: true,
         outDir: 'dist',
         emptyOutDir: false,
         lib: {
             entry: './src/cli.ts',
-            formats: ['cjs'],
-            fileName: () => 'cli.cjs',
+            formats: ['es'],
+            fileName: () => 'cli.js',
         },
         rollupOptions: {
             external: [
                 'commander',
                 '@theunwalked/cardigantime',
-                'fs',
-                'fs/promises',
-                'path',
-                'crypto',
+                'node:fs',
+                'node:fs/promises',
+                'node:path',
+                'node:crypto',
                 'zod',
                 'marked',
                 'tiktoken',
-                'glob',
                 'js-yaml',
                 'fast-xml-parser',
                 'openai',
@@ -38,12 +35,6 @@ export default defineConfig({
                 'dotenv',
                 'dotenv/config'
             ],
-            plugins: [
-                shebang({
-                    shebang: '#!/usr/bin/env node',
-                }),
-            ]
         }
     }
 });
-
