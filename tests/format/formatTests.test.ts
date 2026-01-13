@@ -2,11 +2,9 @@ import * as fs from 'fs/promises';
 import { convertToSection } from '../../src/items/section';
 import { FormatOptions, Formatter } from '../../src/riotprompt';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = import.meta.dirname;
 
 describe('Markdown Parser Integration Test', () => {
 

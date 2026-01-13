@@ -8,7 +8,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 // Path to the compiled CLI executable
-const CLI_PATH = path.resolve(__dirname, '../dist/cli.cjs');
+const CLI_PATH = path.resolve(import.meta.dirname, '../dist/cli.js');
 
 describe('CLI Integration', () => {
     let tempDir: string;
@@ -93,4 +93,3 @@ describe('CLI Integration', () => {
         });
     });
 });
-

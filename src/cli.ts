@@ -346,7 +346,14 @@ export async function main() {
 }
 
 /* v8 ignore start */
-if (typeof require !== 'undefined' && require.main === module) {
+// ESM entry point - only run when executed directly, not when imported for testing
+// Check if we're running as a CLI (process.argv[1] contains 'cli' and not 'vitest')
+const isRunningAsCLI = process.argv[1] && 
+    (process.argv[1].endsWith('cli.js') || process.argv[1].endsWith('cli.ts')) &&
+    !process.argv[1].includes('vitest') &&
+    !process.argv[1].includes('node_modules');
+
+if (isRunningAsCLI) {
     main().catch(err => {
         console.error(err);
         process.exit(1);

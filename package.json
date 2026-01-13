@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "keywords": [
     "prompt",
     "llm",
@@ -9,8 +9,7 @@
   ],
   "description": "Get it together, and organize your prompts.",
   "type": "module",
-  "main": "./dist/riotprompt.cjs",
-  "module": "./dist/riotprompt.js",
+  "main": "./dist/riotprompt.js",
   "types": "./dist/riotprompt.d.ts",
   "repository": {
     "type": "git",
@@ -19,12 +18,14 @@
   "exports": {
     ".": {
       "types": "./dist/riotprompt.d.ts",
-      "import": "./dist/riotprompt.js",
-      "require": "./dist/riotprompt.cjs"
+      "import": "./dist/riotprompt.js"
     }
   },
   "bin": {
-    "riotprompt": "./dist/cli.cjs"
+    "riotprompt": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "scripts": {
     "build": "npm run lint && tsc --noEmit && vite build && vite build -c vite.config.cli.ts",
@@ -68,7 +69,6 @@
     "eslint-plugin-import": "^2.32.0",
     "globals": "^16.3.0",
     "openai": "^6.15.0",
-    "rollup-plugin-preserve-shebang": "^1.0.1",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4",
@@ -88,11 +88,11 @@
     "zod-to-json-schema": "^3.25.1"
   },
   "peerDependencies": {
-    "@riotprompt/execution": "^0.0.3",
-    "@riotprompt/execution-openai": "^0.0.3",
-    "@riotprompt/execution-anthropic": "^0.0.3",
-    "@riotprompt/execution-gemini": "^0.0.3",
-    "@riotprompt/agentic": "^0.0.4",
+    "@riotprompt/execution": "^0.0.4",
+    "@riotprompt/execution-openai": "^0.0.4",
+    "@riotprompt/execution-anthropic": "^0.0.4",
+    "@riotprompt/execution-gemini": "^0.0.4",
+    "@riotprompt/agentic": "^0.0.5",
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "openai": "^6.15.0",
