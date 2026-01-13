@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "keywords": [
     "prompt",
     "llm",
@@ -88,11 +88,11 @@
     "zod-to-json-schema": "^3.25.1"
   },
   "peerDependencies": {
-    "@riotprompt/execution": "^0.0.1",
-    "@riotprompt/execution-openai": "^0.0.1",
-    "@riotprompt/execution-anthropic": "^0.0.1",
-    "@riotprompt/execution-gemini": "^0.0.1",
-    "@riotprompt/agentic": "^0.0.1",
+    "@riotprompt/execution": "^0.0.3",
+    "@riotprompt/execution-openai": "^0.0.3",
+    "@riotprompt/execution-anthropic": "^0.0.3",
+    "@riotprompt/execution-gemini": "^0.0.3",
+    "@riotprompt/agentic": "^0.0.4",
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "openai": "^6.15.0",
