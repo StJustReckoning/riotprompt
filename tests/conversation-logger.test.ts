@@ -139,7 +139,8 @@ describe('Conversation Persistence & Replay', () => {
 
             const conversation = logger.getConversation();
             expect(conversation.messages[0].content).not.toContain('sk-abcd');
-            expect(conversation.messages[0].content).toContain('[REDACTED]');
+            // Fjell masking uses **** instead of [REDACTED]
+            expect(conversation.messages[0].content).toContain('****');
         });
 
         it('should call onSaved callback', async () => {

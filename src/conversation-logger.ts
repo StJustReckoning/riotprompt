@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { DEFAULT_LOGGER, wrapLogger } from "./logger";
+import { maskSensitive, type MaskingConfig } from "./logging-config";
 import type { ConversationMessage, ToolCall } from "./conversation";
 
 // ===== TYPE DEFINITIONS =====
@@ -20,8 +21,14 @@ export interface LogConfig {
     filenameTemplate?: string;
     includeMetadata?: boolean;
     includePrompt?: boolean;
+    /** Enable sensitive data redaction (defaults to true) */
     redactSensitive?: boolean;
+    /** 
+     * @deprecated Use maskingConfig instead. Custom regex patterns for redaction.
+     */
     redactPatterns?: RegExp[];
+    /** Masking configuration for @fjell/logging integration */
+    maskingConfig?: MaskingConfig;
     onSaved?: (path: string) => void;
     onError?: (error: Error) => void;
 }
@@ -157,8 +164,9 @@ export class ConversationLogger {
             filenameTemplate: 'conversation-{timestamp}',
             includeMetadata: true,
             includePrompt: false,
-            redactSensitive: false,
+            redactSensitive: true,  // Now defaults to true for security
             redactPatterns: [],
+            maskingConfig: undefined,
             onSaved: () => {},
             onError: () => {},
             ...config,
@@ -437,26 +445,26 @@ export class ConversationLogger {
     }
 
     /**
-     * Redact sensitive content
+     * Redact sensitive content using @fjell/logging masking
+     * 
+     * Automatically masks:
+     * - API keys (OpenAI, Anthropic, AWS, GitHub, etc.)
+     * - Passwords and secrets
+     * - Email addresses
+     * - SSNs
+     * - Private keys
+     * - JWTs
+     * - Large base64 blobs
      */
     private redactContent(content: string): string {
-        let redacted = content;
+        // Use Fjell's comprehensive masking
+        let redacted = maskSensitive(content, this.config.maskingConfig);
 
-        // Apply custom patterns
-        for (const pattern of this.config.redactPatterns) {
-            redacted = redacted.replace(pattern, '[REDACTED]');
-        }
-
-        // Default patterns
-        const defaultPatterns = [
-            /api[_-]?key[\s:="']+[\w-]+/gi,
-            /password[\s:="']+[\w-]+/gi,
-            /Bearer\s+[\w-]+/gi,
-            /sk-[a-zA-Z0-9]{48}/g,
-        ];
-
-        for (const pattern of defaultPatterns) {
-            redacted = redacted.replace(pattern, '[REDACTED]');
+        // Also apply any legacy custom patterns for backwards compatibility
+        if (this.config.redactPatterns && this.config.redactPatterns.length > 0) {
+            for (const pattern of this.config.redactPatterns) {
+                redacted = redacted.replace(pattern, '[REDACTED]');
+            }
         }
 
         return redacted;
