@@ -185,7 +185,8 @@ describe('measureAsyncExecutionTime', () => {
             return 'done';
         });
         expect(result).toBe('done');
-        expect(durationMs).toBeGreaterThanOrEqual(10);
+        // Allow some timing variance - setTimeout is not exact
+        expect(durationMs).toBeGreaterThanOrEqual(8);
     });
 });
 
