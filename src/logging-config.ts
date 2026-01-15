@@ -63,6 +63,8 @@ export function configureSecureLogging(options: SecureLoggingOptions = {}): Mask
         maskPrivateKeys: options.maskPrivateKeys ?? true,
         maskJWTs: options.maskJWTs ?? true,
         maskBase64Blobs: options.maskBase64Blobs ?? true,
+        maskBearerTokens: true,
+        maskGenericSecrets: true,
         maxDepth: options.maxDepth ?? 8,
     };
 }
@@ -79,6 +81,8 @@ export const DEFAULT_MASKING_CONFIG: MaskingConfig = {
     maskPrivateKeys: true,
     maskJWTs: true,
     maskBase64Blobs: true,
+    maskBearerTokens: true,
+    maskGenericSecrets: true,
     maxDepth: 8,
 };
 
@@ -94,6 +98,8 @@ export const DEVELOPMENT_MASKING_CONFIG: MaskingConfig = {
     maskPrivateKeys: false,
     maskJWTs: false,
     maskBase64Blobs: false,
+    maskBearerTokens: false,
+    maskGenericSecrets: false,
     maxDepth: 8,
 };
 

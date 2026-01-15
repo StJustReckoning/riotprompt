@@ -315,7 +315,19 @@ describe('Fjell Logging Integration', () => {
 
     it('should not mask when disabled', () => {
       const content = 'API key: sk-abc123 password=secret';
-      const masked = maskWithConfig(content, { enabled: false });
+      const masked = maskWithConfig(content, {
+        enabled: false,
+        maskApiKeys: false,
+        maskPasswords: false,
+        maskEmails: false,
+        maskSSNs: false,
+        maskPrivateKeys: false,
+        maskJWTs: false,
+        maskBase64Blobs: false,
+        maskBearerTokens: false,
+        maskGenericSecrets: false,
+        maxDepth: 8,
+      });
       expect(masked).toBe(content);
     });
   });
