@@ -166,7 +166,7 @@ export class CLIValidator {
         // Check for null bytes
         if (!this.config.allowNullBytes && input.includes('\0')) {
             this.auditLogger.log({
-                type: 'input_validation_failed',
+                type: 'path_validation_failed',
                 severity: 'warning',
                 message: 'Null byte detected in input',
             });
@@ -184,7 +184,7 @@ export class CLIValidator {
             const controlCharRegex = /[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/;
             if (controlCharRegex.test(input)) {
                 this.auditLogger.log({
-                    type: 'input_validation_failed',
+                    type: 'path_validation_failed',
                     severity: 'warning',
                     message: 'Control character detected in input',
                 });
@@ -254,20 +254,20 @@ export class CLIValidator {
      */
     securePathSchema(options: {
         checkExtension?: boolean;
-    } = {}): z.ZodEffects<z.ZodString, string, string> {
+    } = {}) {
         return z.string().refine(
-            (val) => this.validatePath(val, options).valid,
-            (val) => ({ message: this.validatePath(val, options).error || 'Invalid path' })
+            (val: string) => this.validatePath(val, options).valid,
+            { message: 'Invalid path' }
         );
     }
 
     /**
      * Create a Zod schema for secure string validation
      */
-    secureStringSchema(): z.ZodEffects<z.ZodString, string, string> {
+    secureStringSchema() {
         return z.string().refine(
-            (val) => this.validateString(val).valid,
-            (val) => ({ message: this.validateString(val).error || 'Invalid string' })
+            (val: string) => this.validateString(val).valid,
+            { message: 'Invalid string' }
         );
     }
 
@@ -278,10 +278,10 @@ export class CLIValidator {
         min?: number;
         max?: number;
         integer?: boolean;
-    } = {}): z.ZodEffects<z.ZodNumber, number, number> {
+    } = {}) {
         return z.number().refine(
-            (val) => this.validateNumber(val, options).valid,
-            (val) => ({ message: this.validateNumber(val, options).error || 'Invalid number' })
+            (val: number) => this.validateNumber(val, options).valid,
+            { message: 'Invalid number' }
         );
     }
 

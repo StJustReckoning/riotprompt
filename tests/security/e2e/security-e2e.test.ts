@@ -49,8 +49,10 @@ describe('E2E Security Tests', () => {
                     allowSymlinks: false,
                     denyPatterns: ['\\.\\.',  '~', '\\$\\{', '\\$\\('],
                 },
-                strings: { enabled: true, maxLength: 10000, allowNullBytes: false, allowControlChars: false },
-                numbers: { enabled: true, allowNaN: false, allowInfinity: false },
+                maxStringLength: 10000,
+                allowNullBytes: false,
+                allowControlChars: false,
+                allowedExtensions: ['.md', '.json', '.xml', '.yaml', '.yml', '.txt'],
             });
 
             let blocked = 0;

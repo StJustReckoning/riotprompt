@@ -129,8 +129,10 @@ describe('Attack Simulation Tests', () => {
             const validator = new CLIValidator({
                 enabled: true,
                 paths: { enabled: true, basePaths: [], allowAbsolute: false, allowSymlinks: false, denyPatterns: [] },
-                strings: { enabled: true, maxLength: 10000, allowNullBytes: false, allowControlChars: false },
-                numbers: { enabled: true, allowNaN: false, allowInfinity: false },
+                maxStringLength: 10000,
+                allowNullBytes: false,
+                allowControlChars: false,
+                allowedExtensions: ['.md', '.json', '.xml', '.yaml', '.yml', '.txt'],
             });
 
             // Test null byte detection specifically
@@ -150,8 +152,10 @@ describe('Attack Simulation Tests', () => {
             const validator = new CLIValidator({
                 enabled: true,
                 paths: { enabled: true, basePaths: [], allowAbsolute: false, allowSymlinks: false, denyPatterns: [] },
-                strings: { enabled: true, maxLength: 10000, allowNullBytes: false, allowControlChars: false },
-                numbers: { enabled: true, allowNaN: false, allowInfinity: false },
+                maxStringLength: 10000,
+                allowNullBytes: false,
+                allowControlChars: false,
+                allowedExtensions: ['.md', '.json', '.xml', '.yaml', '.yml', '.txt'],
             });
 
             // Test control character detection

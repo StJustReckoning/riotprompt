@@ -66,8 +66,10 @@ describe('Security Performance Tests', () => {
             const validator = new CLIValidator({
                 enabled: true,
                 paths: { enabled: true, basePaths: [], allowAbsolute: false, allowSymlinks: false, denyPatterns: [] },
-                strings: { enabled: true, maxLength: 10000, allowNullBytes: false, allowControlChars: false },
-                numbers: { enabled: true, allowNaN: false, allowInfinity: false },
+                maxStringLength: 10000,
+                allowNullBytes: false,
+                allowControlChars: false,
+                allowedExtensions: ['.md', '.json', '.xml', '.yaml', '.yml', '.txt'],
             });
 
             const iterations = 10000;
@@ -167,8 +169,10 @@ describe('Security Performance Tests', () => {
             const validator = new CLIValidator({
                 enabled: true,
                 paths: { enabled: true, basePaths: ['/app'], allowAbsolute: false, allowSymlinks: false, denyPatterns: [] },
-                strings: { enabled: true, maxLength: 10000, allowNullBytes: false, allowControlChars: false },
-                numbers: { enabled: true, allowNaN: false, allowInfinity: false },
+                maxStringLength: 10000,
+                allowNullBytes: false,
+                allowControlChars: false,
+                allowedExtensions: ['.md', '.json', '.xml', '.yaml', '.yml', '.txt'],
             });
 
             initializeErrorHandling({ environment: 'production' });
