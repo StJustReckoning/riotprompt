@@ -187,3 +187,5 @@ Apache-2.0 License - see [LICENSE](LICENSE) for details.
 ---
 
 *Build better prompts, faster.*
+
+<!-- v1.0.0 -->
