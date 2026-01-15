@@ -55,7 +55,6 @@ export function initializeErrorHandling(options: {
         enabled: true,
         basePaths: options.basePaths || [process.cwd()],
         redactSystemPaths: isProduction,
-        replacement: '[PATH]',
     });
 
     // Configure secret guard with kjerneverk-specific patterns

@@ -9,6 +9,9 @@ import path from 'path';
 import { PathSecurityConfig } from './types';
 import { getAuditLogger, SecurityAuditLogger } from './audit-logger';
 
+// Re-export PathSecurityConfig for external use
+export type { PathSecurityConfig };
+
 /**
  * Result of path validation
  */

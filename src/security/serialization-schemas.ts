@@ -104,7 +104,7 @@ export const LoggedConversationSchema = z.object({
         duration: z.number().nonnegative().optional(),
         model: z.string().max(SERIALIZATION_LIMITS.maxStringLength),
         template: z.string().max(SERIALIZATION_LIMITS.maxStringLength).optional(),
-        userContext: z.record(z.any()).optional(),
+        userContext: z.record(z.string(), z.any()).optional(),
     }),
     prompt: z.object({
         persona: z.string().optional(),
@@ -119,7 +119,7 @@ export const LoggedConversationSchema = z.object({
         content: z.string().nullable(),
         tool_calls: z.array(ToolCallSchema).optional(),
         tool_call_id: z.string().optional(),
-        metadata: z.record(z.any()).optional(),
+        metadata: z.record(z.string(), z.any()).optional(),
     })).max(SERIALIZATION_LIMITS.maxMessages),
     summary: z.object({
         totalMessages: z.number().int().nonnegative(),

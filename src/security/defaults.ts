@@ -1,7 +1,30 @@
 import { 
     SecurityConfig, 
     SecurityConfigSchema,
+    PathSecurityConfig,
+    ToolSecurityConfig,
+    SecretSecurityConfig,
+    LogSecurityConfig,
+    TimeoutConfig,
 } from './types';
+
+/**
+ * Deep partial type for recursive partial objects
+ */
+export type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+/**
+ * User configuration with all fields optional (including nested)
+ */
+export type UserSecurityConfig = {
+    paths?: Partial<PathSecurityConfig>;
+    tools?: Partial<ToolSecurityConfig>;
+    secrets?: Partial<SecretSecurityConfig>;
+    logging?: Partial<LogSecurityConfig>;
+    timeouts?: Partial<TimeoutConfig>;
+};
 
 /**
  * Secure default configuration
@@ -55,7 +78,7 @@ export const PERMISSIVE_DEFAULTS: SecurityConfig = {
  * Merge user configuration with defaults
  */
 export function mergeSecurityConfig(
-    userConfig: Partial<SecurityConfig> | undefined,
+    userConfig: UserSecurityConfig | undefined,
     defaults: SecurityConfig = SECURE_DEFAULTS
 ): SecurityConfig {
     if (!userConfig) return defaults;
