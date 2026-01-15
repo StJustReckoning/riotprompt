@@ -41,7 +41,7 @@ function createSafeIgnorePatterns(patterns: string[], logger: Logger): RegExp[] 
                 type: 'regex_blocked',
                 severity: 'warning',
                 message: `Blocked unsafe regex pattern: ${message}`,
-                details: { patternLength: pattern.length },
+                context: { patternLength: pattern.length },
             });
         },
         onWarning: (message, _pattern) => {

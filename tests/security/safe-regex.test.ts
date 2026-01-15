@@ -130,7 +130,7 @@ describe('Safe Regex Integration', () => {
             const safe = new SafeRegex();
 
             for (const vector of REDOS_VECTORS) {
-                const result = safe.create(vector);
+                const result = safe.create(vector.pattern.source);
                 // Most ReDoS vectors should be blocked
                 // Some may pass if they're not actually dangerous
                 if (!result.safe) {

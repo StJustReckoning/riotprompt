@@ -8,6 +8,8 @@ export type SecurityEventType =
   | 'api_key_used'
   | 'deserialization_failed'
   | 'regex_timeout'
+  | 'regex_blocked'
+  | 'input_validation_failed'
   | 'request_timeout'
   | 'rate_limit_exceeded';
 
