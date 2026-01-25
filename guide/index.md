@@ -49,7 +49,9 @@ const result = await executeChat(prompt, { model: 'gpt-4o' });
 
 This guide directory contains specialized documentation for different aspects of the system:
 
+*   [Integration](./integration.md): Comprehensive guide for integrating RiotPrompt as a library, including API reference, conversation management, tool integration, and agentic workflows.
 *   [Architecture](./architecture.md): Internal design, module structure, and data flow.
 *   [Usage Patterns](./usage.md): Common patterns for CLI and library usage, including the Recipes API and Structured Outputs.
 *   [Configuration](./configuration.md): Deep dive into configuration options.
+*   [Security](./security.md): Security best practices and features.
 *   [Development](./development.md): Guide for contributing to `riotprompt`.
