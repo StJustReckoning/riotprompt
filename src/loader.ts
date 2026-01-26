@@ -1,11 +1,14 @@
 import path from "path";
 import { z } from "zod";
+import { SafeRegex } from "@theunwalked/pressurelid";
 import { DEFAULT_IGNORE_PATTERNS } from "./constants";
 import { ParametersSchema } from "./items/parameters";
 import { SectionOptions, SectionOptionsSchema } from "./items/section";
-import { DEFAULT_LOGGER, wrapLogger } from "./logger";
+import { DEFAULT_LOGGER, wrapLogger, type Logger } from "./logger";
 import { Section, Weighted, createSection } from "./riotprompt";
 import * as Storage from "./util/storage";
+import { getAuditLogger } from "./security/audit-logger";
+import { createSafeError } from "./error-handling";
 
 const OptionsSchema = z.object({
     logger: z.any().optional().default(DEFAULT_LOGGER),
@@ -16,6 +19,57 @@ const OptionsSchema = z.object({
 export type Options = z.infer<typeof OptionsSchema>;
 
 export type OptionsParam = Partial<Options>;
+
+/**
+ * Create safe regex patterns from ignore patterns using pressurelid
+ * to prevent ReDoS attacks from malicious patterns.
+ *
+ * @param patterns - Array of ignore patterns (can be regex or glob-like)
+ * @param logger - Logger instance for warnings
+ * @returns Array of safe RegExp objects
+ */
+function createSafeIgnorePatterns(patterns: string[], logger: Logger): RegExp[] {
+    const auditLogger = getAuditLogger();
+
+    // Create SafeRegex instance with security callbacks
+    const safeRegex = new SafeRegex({
+        maxLength: 500,
+        timeoutMs: 1000,
+        onBlock: (message, pattern) => {
+            logger.warn(`Blocked unsafe ignore pattern: ${message}`, { patternLength: pattern.length });
+            auditLogger.log({
+                type: 'regex_blocked',
+                severity: 'warning',
+                message: `Blocked unsafe regex pattern: ${message}`,
+                context: { patternLength: pattern.length },
+            });
+        },
+        onWarning: (message, _pattern) => {
+            logger.debug(`Regex warning: ${message}`);
+        },
+    });
+
+    return patterns
+        .map(pattern => {
+            // Try to create a safe regex from the pattern
+            const result = safeRegex.create(pattern, 'i');
+
+            if (result.safe && result.regex) {
+                return result.regex;
+            }
+
+            // If direct regex fails, try as glob pattern
+            const globResult = safeRegex.globToRegex(pattern);
+            if (globResult.safe && globResult.regex) {
+                return globResult.regex;
+            }
+
+            // Log the failure and return a pattern that matches nothing
+            logger.warn(`Invalid or unsafe ignore pattern "${pattern}": ${result.error || globResult.error}`);
+            return null;
+        })
+        .filter((regex): regex is RegExp => regex !== null);
+}
 
 export interface Instance {
     load: <T extends Weighted>(contextDirectories?: string[], options?: SectionOptions) => Promise<Section<T>[]>;
@@ -128,15 +182,7 @@ export const create = (loaderOptions?: OptionsParam): Instance => {
 
                 // Get all other files in the directory
                 const files = await storage.listFiles(contextDir);
-                const ignorePatternsRegex = ignorePatterns.map(pattern => {
-                    try {
-                        return new RegExp(pattern, 'i');
-                    } catch (error) {
-                        logger.error(`Invalid ignore pattern: ${pattern}`, { error });
-                        // Return a pattern that matches nothing
-                        return /(?!)/;  // Negative lookahead that always fails
-                    }
-                });
+                const ignorePatternsRegex = createSafeIgnorePatterns(ignorePatterns, logger);
 
                 const filteredFiles = files.filter(file => {
                     const fullPath = path.join(contextDir, file);
@@ -177,7 +223,9 @@ export const create = (loaderOptions?: OptionsParam): Instance => {
 
                 contextSections.push(mainContextSection);
             } catch (error) {
-                logger.error(`Error processing context directory ${contextDir}: ${error}`);
+                // Create a safe error that doesn't leak path information
+                const safeError = createSafeError(error, { operation: 'load', directory: path.basename(contextDir) });
+                logger.error(`Error processing context directory: ${safeError.message}`);
             }
         }
 

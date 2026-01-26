@@ -54,6 +54,9 @@ export * as Serializer from "./serializer";
 export * as Writer from "./writer";
 export * as Execution from "./execution/index";
 
+// ===== SECURITY =====
+export * as Security from "./security/index";
+
 // ===== MODEL CONFIGURATION =====
 export {
     ModelRegistry,
@@ -78,6 +81,40 @@ export type { Prompt } from "./prompt";
 export type { FormatOptions, SectionSeparator, SectionTitleProperty } from "./formatter";
 export type { Model, Request } from "./chat";
 export type { Logger } from "./logger";
+export { DEFAULT_LOGGER, wrapLogger, createConsoleLogger } from "./logger";
+
+// ===== SECURE LOGGING =====
+export {
+    configureSecureLogging,
+    maskSensitive,
+    executeWithCorrelation,
+    DEFAULT_MASKING_CONFIG,
+    DEVELOPMENT_MASKING_CONFIG,
+    RiotPromptLogger,
+    // Re-exports from @fjell/logging
+    maskWithConfig,
+    createCorrelatedLogger,
+    generateCorrelationId
+} from "./logging-config";
+export type { SecureLoggingOptions, MaskingConfig } from "./logging-config";
+
+// ===== SAFE REGEX =====
+export { SafeRegex, createSafeRegex, globToSafeRegex, escapeForRegex } from '@theunwalked/pressurelid';
+export type { SafeRegexResult, SafeRegexConfig, SafeRegexReason } from '@theunwalked/pressurelid';
+
+// ===== ERROR HANDLING =====
+export {
+    initializeErrorHandling,
+    sanitize as sanitizeError,
+    createSafeError,
+    withErrorHandling,
+    handleError,
+    formatErrorForDisplay,
+    configureErrorSanitizer,
+    configurePathSanitizer,
+    configureSecretGuard,
+} from './error-handling';
+export type { ErrorSanitizerConfig, SanitizedErrorResult, ErrorHandlingOptions } from './error-handling';
 export type { RecipeConfig, ContentItem, TemplateConfig, ToolGuidanceConfig } from "./recipes";
 export type {
     ConversationMessage,
@@ -152,3 +189,13 @@ export type {
     PersonaRole,
     TokenizerEncoding
 } from "./model-config";
+export type {
+    PathSecurityConfig,
+    ToolSecurityConfig,
+    SecretSecurityConfig,
+    LogSecurityConfig,
+    TimeoutConfig,
+    SecurityConfig,
+    SecurityEventType,
+    SecurityEvent
+} from "./security/index";

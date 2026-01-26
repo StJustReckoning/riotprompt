@@ -30,6 +30,7 @@ describe('Conversation Logger Extended', () => {
             });
 
             const conv = logger.getConversation();
+            // Custom patterns still use [REDACTED]
             expect(conv.messages[0].content).toBe('My [REDACTED] is here');
         });
 
@@ -46,7 +47,8 @@ describe('Conversation Logger Extended', () => {
             });
 
             const conv = logger.getConversation();
-            expect(conv.messages[0].content).toContain('[REDACTED]');
+            // Fjell masking uses **** instead of [REDACTED]
+            expect(conv.messages[0].content).toContain('****');
         });
     });
 

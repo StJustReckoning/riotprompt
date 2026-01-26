@@ -1,64 +1,60 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger, DEFAULT_LOGGER, wrapLogger } from '../src/logger';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Logger, DEFAULT_LOGGER, wrapLogger, createConsoleLogger } from '../src/logger';
 import { LIBRARY_NAME } from '../src/constants';
 
 describe('Logger', () => {
     describe('DEFAULT_LOGGER', () => {
-        // Save original console methods
-        const originalConsole = {
-            debug: console.debug,
-            info: console.info,
-            warn: console.warn,
-            error: console.error,
-            log: console.log
-        };
+        // DEFAULT_LOGGER now uses @fjell/logging, so we test the interface
+        // rather than console method calls directly
 
-        beforeEach(() => {
-            // Mock console methods
-            console.debug = vi.fn();
-            console.info = vi.fn();
-            console.warn = vi.fn();
-            console.error = vi.fn();
-            console.log = vi.fn();
+        it('should have all required methods', () => {
+            expect(typeof DEFAULT_LOGGER.debug).toBe('function');
+            expect(typeof DEFAULT_LOGGER.info).toBe('function');
+            expect(typeof DEFAULT_LOGGER.warn).toBe('function');
+            expect(typeof DEFAULT_LOGGER.error).toBe('function');
+            expect(typeof DEFAULT_LOGGER.verbose).toBe('function');
+            expect(typeof DEFAULT_LOGGER.silly).toBe('function');
         });
 
-        afterEach(() => {
-            // Restore original console methods
-            console.debug = originalConsole.debug;
-            console.info = originalConsole.info;
-            console.warn = originalConsole.warn;
-            console.error = originalConsole.error;
-            console.log = originalConsole.log;
+        it('should have get method for child loggers', () => {
+            expect(typeof DEFAULT_LOGGER.get).toBe('function');
         });
 
-        it('debug should call console.debug', () => {
-            DEFAULT_LOGGER.debug('test message', { data: 'test' });
-            expect(console.debug).toHaveBeenCalledWith('test message', { data: 'test' });
+        it('should create child loggers with get()', () => {
+            const childLogger = DEFAULT_LOGGER.get?.('TestComponent');
+            expect(childLogger).toBeDefined();
+            expect(childLogger?.name).toContain('TestComponent');
         });
 
-        it('info should call console.info', () => {
-            DEFAULT_LOGGER.info('test message', { data: 'test' });
-            expect(console.info).toHaveBeenCalledWith('test message', { data: 'test' });
+        it('should create nested child loggers', () => {
+            const childLogger = DEFAULT_LOGGER.get?.('Parent', 'Child');
+            expect(childLogger).toBeDefined();
+            expect(childLogger?.name).toContain('Parent');
+            expect(childLogger?.name).toContain('Child');
         });
 
-        it('warn should call console.warn', () => {
-            DEFAULT_LOGGER.warn('test message', { data: 'test' });
-            expect(console.warn).toHaveBeenCalledWith('test message', { data: 'test' });
+        it('debug should not throw', () => {
+            expect(() => DEFAULT_LOGGER.debug('test message', { data: 'test' })).not.toThrow();
         });
 
-        it('error should call console.error', () => {
-            DEFAULT_LOGGER.error('test message', { data: 'test' });
-            expect(console.error).toHaveBeenCalledWith('test message', { data: 'test' });
+        it('info should not throw', () => {
+            expect(() => DEFAULT_LOGGER.info('test message', { data: 'test' })).not.toThrow();
         });
 
-        it('verbose should call console.log', () => {
-            DEFAULT_LOGGER.verbose('test message', { data: 'test' });
-            expect(console.log).not.toHaveBeenCalledWith('test message', { data: 'test' });
+        it('warn should not throw', () => {
+            expect(() => DEFAULT_LOGGER.warn('test message', { data: 'test' })).not.toThrow();
         });
 
-        it('silly should call console.log', () => {
-            DEFAULT_LOGGER.silly('test message', { data: 'test' });
-            expect(console.log).not.toHaveBeenCalledWith('test message', { data: 'test' });
+        it('error should not throw', () => {
+            expect(() => DEFAULT_LOGGER.error('test message', { data: 'test' })).not.toThrow();
+        });
+
+        it('verbose should not throw', () => {
+            expect(() => DEFAULT_LOGGER.verbose('test message', { data: 'test' })).not.toThrow();
+        });
+
+        it('silly should not throw', () => {
+            expect(() => DEFAULT_LOGGER.silly('test message', { data: 'test' })).not.toThrow();
         });
     });
 
@@ -109,6 +105,13 @@ describe('Logger', () => {
             wrappedLogger.silly('test message', { data: 'test' });
             expect(mockLogger.silly).toHaveBeenCalledWith(`[${LIBRARY_NAME}] : test message`, { data: 'test' });
         });
+
+        it('should support get method for child loggers', () => {
+            const child = wrappedLogger.get?.('Child');
+            expect(child).toBeDefined();
+            child?.info('child message');
+            expect(mockLogger.info).toHaveBeenCalled();
+        });
     });
 
     describe('wrapLogger with name', () => {
@@ -158,6 +161,58 @@ describe('Logger', () => {
         it('silly should prepend library name and component name to message', () => {
             wrappedLogger.silly('test message', { data: 'test' });
             expect(mockLogger.silly).toHaveBeenCalledWith(`[${LIBRARY_NAME}] [${componentName}]: test message`, { data: 'test' });
+        });
+    });
+
+    describe('wrapLogger validation', () => {
+        it('should throw if logger is missing required methods', () => {
+            const incompleteLogger = {
+                name: 'incomplete',
+                debug: vi.fn(),
+                info: vi.fn(),
+                // Missing warn, error, verbose, silly
+            };
+
+            expect(() => wrapLogger(incompleteLogger as any)).toThrow('missing required methods');
+        });
+
+        it('should list missing methods in error message', () => {
+            const incompleteLogger = {
+                name: 'incomplete',
+                debug: vi.fn(),
+                info: vi.fn(),
+            };
+
+            expect(() => wrapLogger(incompleteLogger as any)).toThrow('warn');
+            expect(() => wrapLogger(incompleteLogger as any)).toThrow('error');
+        });
+    });
+
+    describe('createConsoleLogger', () => {
+        it('should create a logger with the given name', () => {
+            const logger = createConsoleLogger('test');
+            expect(logger.name).toBe('test');
+        });
+
+        it('should have all required methods', () => {
+            const logger = createConsoleLogger('test');
+            expect(typeof logger.debug).toBe('function');
+            expect(typeof logger.info).toBe('function');
+            expect(typeof logger.warn).toBe('function');
+            expect(typeof logger.error).toBe('function');
+            expect(typeof logger.verbose).toBe('function');
+            expect(typeof logger.silly).toBe('function');
+        });
+
+        it('should support get method for child loggers', () => {
+            const logger = createConsoleLogger('parent');
+            const child = logger.get?.('child');
+            expect(child?.name).toBe('parent:child');
+        });
+
+        it('should use default name if not provided', () => {
+            const logger = createConsoleLogger();
+            expect(logger.name).toBe('console');
         });
     });
 });
