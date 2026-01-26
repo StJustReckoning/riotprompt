@@ -1,6 +1,6 @@
 {
   "name": "@riotprompt/riotprompt",
-  "version": "1.0.0-dev.0",
+  "version": "1.0.0",
   "_versionReset": "2026-01-15",
   "keywords": [
     "prompt",
