@@ -316,45 +316,57 @@ const DANGEROUS_GLOB_PATTERNS = [
  * ```
  */
 export function sanitizeGlobPattern(pattern: string): string {
-    // Use a whitelist approach: only allow safe characters and glob patterns
-    // This avoids the incomplete sanitization issue by not trying to remove dangerous sequences
+    let safe = pattern;
     
-    // Split pattern into segments by path separators
-    const segments = pattern.split(/[/\\]+/);
+    // Remove parent directory references completely by filtering segments
+    // Split by path separators, remove .. segments, then rejoin
+    // This approach avoids the incomplete sanitization issue
+    const parts = safe.split(/([/\\])/); // Split but keep separators
+    const filtered: string[] = [];
     
-    // Filter out dangerous segments and reconstruct the path
-    const safeSegments = segments
-        .filter(segment => {
-            // Remove empty segments
-            if (!segment) return false;
-            
-            // Block parent directory references
-            if (segment === '..' || segment.includes('..')) return false;
-            
-            // Block home directory
-            if (segment.startsWith('~')) return false;
-            
-            // Block variable expansion
-            if (segment.includes('${') || segment.includes('$(')) return false;
-            
-            // Block command substitution
-            if (segment.includes('`')) return false;
-            
-            // Block absolute path indicators (drive letters)
-            if (/^[a-zA-Z]:/.test(segment)) return false;
-            
-            return true;
-        })
-        .map(segment => {
-            // Remove any remaining dangerous characters
-            return segment
-                .replace(/\$\{[^}]*\}/g, '')
-                .replace(/\$\([^)]*\)/g, '')
-                .replace(/`[^`]*`/g, '');
-        });
+    for (const part of parts) {
+        // Keep separators as-is
+        if (part === '/' || part === '\\') {
+            filtered.push(part);
+            continue;
+        }
+        
+        // Skip parent directory references
+        if (part === '..' || part.startsWith('..')) {
+            continue;
+        }
+        
+        // Keep other segments
+        if (part) {
+            filtered.push(part);
+        }
+    }
     
-    // Join with forward slash (standard for glob patterns)
-    return safeSegments.join('/');
+    safe = filtered.join('');
+    
+    // Clean up consecutive separators (but preserve them in general)
+    safe = safe
+        .replace(/\/\/+/g, '/')
+        .replace(/\\\\+/g, '\\');
+    
+    // Remove absolute path starters
+    safe = safe
+        .replace(/^\/+/, '')
+        .replace(/^[a-zA-Z]:[\\/]?/, '')
+        // Remove home directory references
+        .replace(/^~[\\/]?/, '')
+        // Remove variable expansion
+        .replace(/\$\{[^}]*\}/g, '')
+        // Remove command substitution
+        .replace(/\$\([^)]*\)/g, '')
+        .replace(/`[^`]*`/g, '');
+
+    // Remove any remaining dangerous characters at the start
+    while (safe.startsWith('/') || safe.startsWith('\\')) {
+        safe = safe.substring(1);
+    }
+
+    return safe;
 }
 
 /**
