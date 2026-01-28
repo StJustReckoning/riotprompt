@@ -16,21 +16,27 @@ const mocks = vi.hoisted(() => ({
 
 // Mock SDKs
 vi.mock('@anthropic-ai/sdk', () => ({
-    default: vi.fn(() => ({
-        messages: { create: mocks.anthropicCreate }
-    }))
+    default: vi.fn(function(this: any) {
+        return {
+            messages: { create: mocks.anthropicCreate }
+        };
+    })
 }));
 
 vi.mock('openai', () => ({
-    default: vi.fn(() => ({
-        chat: { completions: { create: mocks.openaiCreate } }
-    }))
+    default: vi.fn(function(this: any) {
+        return {
+            chat: { completions: { create: mocks.openaiCreate } }
+        };
+    })
 }));
 
 vi.mock('@google/generative-ai', () => ({
-    GoogleGenerativeAI: vi.fn(() => ({
-        getGenerativeModel: mocks.geminiGetModel
-    }))
+    GoogleGenerativeAI: vi.fn(function(this: any) {
+        return {
+            getGenerativeModel: mocks.geminiGetModel
+        };
+    })
 }));
 
 describe('Execution Providers Extended', () => {

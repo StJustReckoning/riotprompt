@@ -298,7 +298,7 @@ describe('Attack Vector Fixtures', () => {
 
     it('should have ReDoS vectors', () => {
         expect(REDOS_VECTORS.length).toBeGreaterThan(0);
-        expect(REDOS_VECTORS[0]).toHaveProperty('pattern');
+        expect(REDOS_VECTORS[0]).toHaveProperty('patternString');
         expect(REDOS_VECTORS[0]).toHaveProperty('input');
     });
 

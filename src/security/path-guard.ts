@@ -316,11 +316,19 @@ const DANGEROUS_GLOB_PATTERNS = [
  * ```
  */
 export function sanitizeGlobPattern(pattern: string): string {
-    let safe = pattern
-        // Remove parent directory references
-        .replace(/\.\.\//g, '')
-        .replace(/\.\.\\/g, '')
-        // Remove absolute path starters
+    let safe = pattern;
+    
+    // Remove parent directory references (loop until all are removed)
+    let previousLength = 0;
+    while (safe.length !== previousLength) {
+        previousLength = safe.length;
+        safe = safe
+            .replace(/\.\.\//g, '')
+            .replace(/\.\.\\/g, '');
+    }
+    
+    // Remove absolute path starters
+    safe = safe
         .replace(/^\/+/, '')
         .replace(/^[a-zA-Z]:[\\/]?/, '')
         // Remove home directory references

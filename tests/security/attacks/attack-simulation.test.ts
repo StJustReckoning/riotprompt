@@ -230,7 +230,7 @@ describe('Attack Simulation Tests', () => {
             for (const vector of REDOS_VECTORS) {
                 // The SafeRegex class should block or timeout these
                 // Here we verify the test vectors are properly defined
-                expect(vector.pattern).toBeDefined();
+                expect(vector.patternString).toBeDefined();
                 expect(vector.input).toBeDefined();
                 expect(vector.input.length).toBeGreaterThan(0);
             }
