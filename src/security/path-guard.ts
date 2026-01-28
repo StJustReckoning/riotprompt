@@ -319,12 +319,18 @@ export function sanitizeGlobPattern(pattern: string): string {
     let safe = pattern;
     
     // Remove parent directory references (loop until all are removed)
+    // Use a more robust approach to ensure all ../ sequences are removed
     let previousLength = 0;
-    while (safe.length !== previousLength) {
+    while (safe.length !== previousLength && (safe.includes('../') || safe.includes('..\\'))) {
         previousLength = safe.length;
         safe = safe
             .replace(/\.\.\//g, '')
             .replace(/\.\.\\/g, '');
+    }
+    
+    // Additional safety check: if any ../ or ..\ remains, remove all dots
+    if (safe.includes('../') || safe.includes('..\\')) {
+        safe = safe.replace(/\.\./g, '');
     }
     
     // Remove absolute path starters
