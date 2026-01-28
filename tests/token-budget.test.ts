@@ -75,6 +75,49 @@ describe('Token Budget Management', () => {
             const estimate = counter.estimateResponseTokens(messages);
             expect(estimate).toBeGreaterThan(100);
         });
+
+        it('should count with tool overhead when tools present', () => {
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Call a tool' },
+                { 
+                    role: 'assistant', 
+                    content: null,
+                    tool_calls: [{
+                        id: 'call_1',
+                        type: 'function',
+                        function: { name: 'test', arguments: '{}' }
+                    }]
+                }
+            ];
+
+            const withOverhead = counter.countWithOverhead(messages, true);
+            const withoutOverhead = counter.countWithOverhead(messages, false);
+            
+            expect(withOverhead).toBeGreaterThan(withoutOverhead);
+            expect(withOverhead - withoutOverhead).toBe(100); // Tool definition overhead
+        });
+
+        it('should count with tool overhead when no tools present', () => {
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Simple message' }
+            ];
+
+            const withOverhead = counter.countWithOverhead(messages, true);
+            const withoutOverhead = counter.countWithOverhead(messages, false);
+            
+            expect(withOverhead).toBe(withoutOverhead); // No difference without tools
+        });
+
+        it('should count tool result tokens', () => {
+            const message: ConversationMessage = {
+                role: 'tool',
+                tool_call_id: 'call_123',
+                content: 'Tool result data'
+            };
+
+            const tokens = counter.countMessage(message);
+            expect(tokens).toBeGreaterThan(10); // Includes tool_call_id overhead
+        });
     });
 
     describe('TokenBudgetManager', () => {
@@ -159,6 +202,47 @@ describe('Token Budget Management', () => {
 
             const isNear = nearLimitManager.isNearLimit(messages, 0.5);
             expect(typeof isNear).toBe('boolean');
+
+            nearLimitManager.dispose();
+        });
+
+        it('should call onWarning callback when near limit', () => {
+            const warned = vi.fn();
+            const nearLimitManager = new TokenBudgetManager(
+                { ...config, max: 100, warningThreshold: 0.1, onWarning: warned },
+                'gpt-4o'
+            );
+
+            const messages: ConversationMessage[] = [];
+            // Add enough messages to exceed 10% threshold
+            for (let i = 0; i < 5; i++) {
+                messages.push({
+                    role: 'user',
+                    content: 'Message that uses tokens to exceed threshold'
+                });
+            }
+
+            const isNear = nearLimitManager.isNearLimit(messages);
+            expect(isNear).toBe(true);
+            expect(warned).toHaveBeenCalled();
+
+            nearLimitManager.dispose();
+        });
+
+        it('should not call onWarning when below threshold', () => {
+            const warned = vi.fn();
+            const nearLimitManager = new TokenBudgetManager(
+                { ...config, warningThreshold: 0.9, onWarning: warned },
+                'gpt-4o'
+            );
+
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Short' }
+            ];
+
+            const isNear = nearLimitManager.isNearLimit(messages);
+            expect(isNear).toBe(false);
+            expect(warned).not.toHaveBeenCalled();
 
             nearLimitManager.dispose();
         });
@@ -315,6 +399,54 @@ describe('Token Budget Management', () => {
 
                 const compressed2 = manager.compress(longMessages);
                 expect(compressed2.length).toBeLessThan(longMessages.length);
+
+                manager.dispose();
+            });
+
+            it('should handle mid-phase compression (6-15 messages)', () => {
+                const config: TokenBudgetConfig = {
+                    max: 150,
+                    reserveForResponse: 30,
+                    strategy: 'adaptive',
+                    onBudgetExceeded: 'compress',
+                    preserveRecent: 3,
+                };
+
+                const manager = new TokenBudgetManager(config, 'gpt-4o');
+
+                // Mid-phase conversation (10 messages)
+                const midMessages: ConversationMessage[] = Array(10).fill(null).map((_, i) => ({
+                    role: 'user',
+                    content: `Message ${i} with some content`
+                } as ConversationMessage));
+
+                const compressed = manager.compress(midMessages);
+                
+                // Should compress but preserve more than late phase
+                expect(compressed.length).toBeLessThanOrEqual(midMessages.length);
+
+                manager.dispose();
+            });
+        });
+
+        describe('Summarize Strategy', () => {
+            it('should fall back to FIFO for summarize strategy', () => {
+                const config: TokenBudgetConfig = {
+                    max: 150,
+                    reserveForResponse: 30,
+                    strategy: 'summarize',
+                    onBudgetExceeded: 'compress',
+                };
+
+                const manager = new TokenBudgetManager(config, 'gpt-4o');
+
+                const messages: ConversationMessage[] = Array(20).fill(null).map((_, i) => ({
+                    role: 'user',
+                    content: `Message ${i}`
+                } as ConversationMessage));
+
+                const compressed = manager.compress(messages);
+                expect(compressed.length).toBeLessThan(messages.length);
 
                 manager.dispose();
             });
@@ -535,6 +667,88 @@ describe('Token Budget Management', () => {
             // Should keep system + 4 recent
             expect(truncated.length).toBe(5);
             expect(truncated[0].role).toBe('system');
+
+            manager.dispose();
+        });
+
+        it('should not truncate when below max messages', () => {
+            const config: TokenBudgetConfig = {
+                max: 1000,
+                reserveForResponse: 200,
+                strategy: 'fifo',
+                onBudgetExceeded: 'compress',
+            };
+
+            const manager = new TokenBudgetManager(config, 'gpt-4o');
+
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Message 1' },
+                { role: 'user', content: 'Message 2' },
+            ];
+
+            const truncated = manager.truncate(messages, 5);
+
+            // Should return all messages unchanged
+            expect(truncated.length).toBe(2);
+            expect(truncated).toEqual(messages);
+
+            manager.dispose();
+        });
+
+        it('should handle compression when no compression needed', () => {
+            const config: TokenBudgetConfig = {
+                max: 10000,
+                reserveForResponse: 200,
+                strategy: 'fifo',
+                onBudgetExceeded: 'compress',
+            };
+
+            const manager = new TokenBudgetManager(config, 'gpt-4o');
+
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Short' },
+            ];
+
+            const compressed = manager.compress(messages);
+
+            // Should return messages unchanged
+            expect(compressed.length).toBe(messages.length);
+            expect(compressed).toEqual(messages);
+
+            manager.dispose();
+        });
+
+        it('should handle messages with tool_calls in priority calculation', () => {
+            const config: TokenBudgetConfig = {
+                max: 200,
+                reserveForResponse: 50,
+                strategy: 'priority-based',
+                onBudgetExceeded: 'compress',
+            };
+
+            const manager = new TokenBudgetManager(config, 'gpt-4o');
+
+            const messages: ConversationMessage[] = [
+                { role: 'user', content: 'Request' },
+                { 
+                    role: 'assistant', 
+                    content: null,
+                    tool_calls: [{
+                        id: 'call_1',
+                        type: 'function',
+                        function: { name: 'test', arguments: '{}' }
+                    }]
+                },
+                ...Array(15).fill(null).map((_, i) => ({
+                    role: 'user',
+                    content: `Filler ${i}`
+                } as ConversationMessage))
+            ];
+
+            const compressed = manager.compress(messages);
+
+            // Message with tool_calls should have higher priority
+            expect(compressed.some(m => m.tool_calls && m.tool_calls.length > 0)).toBe(true);
 
             manager.dispose();
         });

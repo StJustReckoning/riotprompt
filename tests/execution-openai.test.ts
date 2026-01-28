@@ -6,13 +6,15 @@ import { Request } from '../src/chat';
 const mockCreate = vi.fn();
 vi.mock('openai', () => {
     return {
-        default: vi.fn().mockImplementation(() => ({
-            chat: {
-                completions: {
-                    create: mockCreate
+        default: vi.fn(function(this: any) {
+            return {
+                chat: {
+                    completions: {
+                        create: mockCreate
+                    }
                 }
-            }
-        }))
+            };
+        })
     };
 });
 

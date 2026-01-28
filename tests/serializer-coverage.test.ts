@@ -6,9 +6,11 @@ import { create as createSection } from '../src/items/section';
 // Mock XMLParser
 const mockParse = vi.fn();
 vi.mock('fast-xml-parser', () => ({
-    XMLParser: vi.fn(() => ({
-        parse: mockParse
-    }))
+    XMLParser: vi.fn(function(this: any) {
+        return {
+            parse: mockParse
+        };
+    })
 }));
 
 describe('Serializer Coverage', () => {

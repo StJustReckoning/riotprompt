@@ -56,9 +56,11 @@ describe('Execution Manager', () => {
         });
 
         // Setup mock implementation
-        (OpenAIProvider as any).mockImplementation(() => ({
-            execute: mockExecute
-        }));
+        (OpenAIProvider as any).mockImplementation(function(this: any) {
+            return {
+                execute: mockExecute
+            };
+        });
 
         // Re-instantiate manager to pick up mock
         manager = new ExecutionManager();
@@ -77,9 +79,11 @@ describe('Execution Manager', () => {
     it('should use model from options if provided', async () => {
         const mockExecute = vi.fn().mockResolvedValue({ content: 'Response', model: 'claude' });
         
-        (AnthropicProvider as any).mockImplementation(() => ({
-            execute: mockExecute
-        }));
+        (AnthropicProvider as any).mockImplementation(function(this: any) {
+            return {
+                execute: mockExecute
+            };
+        });
 
         manager = new ExecutionManager();
 
@@ -102,9 +106,11 @@ describe('Execution Manager', () => {
                 model: 'gpt-4'
             });
 
-            (OpenAIProvider as any).mockImplementation(() => ({
-                execute: mockExecute
-            }));
+            (OpenAIProvider as any).mockImplementation(function(this: any) {
+                return {
+                    execute: mockExecute
+                };
+            });
 
             const request: Request = {
                 model: 'gpt-4',

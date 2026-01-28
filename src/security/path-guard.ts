@@ -316,11 +316,41 @@ const DANGEROUS_GLOB_PATTERNS = [
  * ```
  */
 export function sanitizeGlobPattern(pattern: string): string {
-    let safe = pattern
-        // Remove parent directory references
-        .replace(/\.\.\//g, '')
-        .replace(/\.\.\\/g, '')
-        // Remove absolute path starters
+    let safe = pattern;
+    
+    // Remove parent directory references completely by filtering segments
+    // Split by path separators, remove .. segments, then rejoin
+    // This approach avoids the incomplete sanitization issue
+    const parts = safe.split(/([/\\])/); // Split but keep separators
+    const filtered: string[] = [];
+    
+    for (const part of parts) {
+        // Keep separators as-is
+        if (part === '/' || part === '\\') {
+            filtered.push(part);
+            continue;
+        }
+        
+        // Skip parent directory references
+        if (part === '..' || part.startsWith('..')) {
+            continue;
+        }
+        
+        // Keep other segments
+        if (part) {
+            filtered.push(part);
+        }
+    }
+    
+    safe = filtered.join('');
+    
+    // Clean up consecutive separators (but preserve them in general)
+    safe = safe
+        .replace(/\/\/+/g, '/')
+        .replace(/\\\\+/g, '\\');
+    
+    // Remove absolute path starters
+    safe = safe
         .replace(/^\/+/, '')
         .replace(/^[a-zA-Z]:[\\/]?/, '')
         // Remove home directory references

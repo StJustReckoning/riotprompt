@@ -10,6 +10,22 @@ const execAsync = promisify(exec);
 // Path to the compiled CLI executable
 const CLI_PATH = path.resolve(import.meta.dirname, '../dist/cli.js');
 
+/**
+ * Safely escape a shell argument to prevent command injection
+ * @param arg - The argument to escape
+ * @returns Properly escaped argument
+ */
+function escapeShellArg(arg: string): string {
+    // On Windows, use double quotes; on Unix, use single quotes
+    if (process.platform === 'win32') {
+        // Escape double quotes and wrap in double quotes
+        return `"${arg.replace(/"/g, '""')}"`;
+    } else {
+        // Escape single quotes by replacing ' with '\'' and wrap in single quotes
+        return `'${arg.replace(/'/g, "'\\''")}'`;
+    }
+}
+
 describe('CLI Integration', () => {
     let tempDir: string;
 
@@ -24,7 +40,7 @@ describe('CLI Integration', () => {
     describe('create command', () => {
         it('should create a new prompt scaffold', async () => {
             const promptName = 'test-prompt';
-            const cmd = `node ${CLI_PATH} create ${promptName} --path ${tempDir}`;
+            const cmd = `node ${escapeShellArg(CLI_PATH)} create ${escapeShellArg(promptName)} --path ${escapeShellArg(tempDir)}`;
             
             await execAsync(cmd);
 
@@ -47,7 +63,7 @@ describe('CLI Integration', () => {
             });
             await fs.writeFile(jsonFile, jsonContent);
 
-            const cmd = `node ${CLI_PATH} create ${promptName} --path ${tempDir} --import ${jsonFile}`;
+            const cmd = `node ${escapeShellArg(CLI_PATH)} create ${escapeShellArg(promptName)} --path ${escapeShellArg(tempDir)} --import ${escapeShellArg(jsonFile)}`;
             await execAsync(cmd);
 
             const promptDir = path.join(tempDir, promptName);
@@ -66,14 +82,14 @@ describe('CLI Integration', () => {
         });
 
         it('should process a prompt directory to text', async () => {
-            const cmd = `node ${CLI_PATH} process ${promptPath}`;
+            const cmd = `node ${escapeShellArg(CLI_PATH)} process ${escapeShellArg(promptPath)}`;
             const { stdout } = await execAsync(cmd);
             expect(stdout).toContain('Test instruction');
         });
 
         it('should process a prompt directory to JSON', async () => {
             const outputPath = path.join(tempDir, 'output.json');
-            const cmd = `node ${CLI_PATH} process ${promptPath} --format json --output ${outputPath}`;
+            const cmd = `node ${escapeShellArg(CLI_PATH)} process ${escapeShellArg(promptPath)} --format json --output ${escapeShellArg(outputPath)}`;
             await execAsync(cmd);
 
             const content = await fs.readFile(outputPath, 'utf-8');
@@ -87,7 +103,7 @@ describe('CLI Integration', () => {
                 instructions: { items: [{ text: 'JSON Input' }] }
             }));
 
-            const cmd = `node ${CLI_PATH} process ${jsonInput}`;
+            const cmd = `node ${escapeShellArg(CLI_PATH)} process ${escapeShellArg(jsonInput)}`;
             const { stdout } = await execAsync(cmd);
             expect(stdout).toContain('JSON Input');
         });

@@ -6,11 +6,13 @@ import { Request } from '../src/chat';
 const mockCreate = vi.fn();
 vi.mock('@anthropic-ai/sdk', () => {
     return {
-        default: vi.fn().mockImplementation(() => ({
-            messages: {
-                create: mockCreate
-            }
-        }))
+        default: vi.fn(function(this: any) {
+            return {
+                messages: {
+                    create: mockCreate
+                }
+            };
+        })
     };
 });
 
