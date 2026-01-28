@@ -98,10 +98,10 @@
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "@riotprompt/agentic": "^1.0.2",
-    "@riotprompt/execution": "^1.0.1",
+    "@riotprompt/execution": "^1.0.3",
     "@riotprompt/execution-anthropic": "^1.0.1",
     "@riotprompt/execution-gemini": "^1.0.1",
-    "@riotprompt/execution-openai": "^1.0.1",
+    "@riotprompt/execution-openai": "^1.0.3",
     "openai": "^6.15.0",
     "tiktoken": "^1.0.22"
   },
