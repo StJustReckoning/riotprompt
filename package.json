@@ -75,6 +75,11 @@
     "vite-plugin-node": "^7.0.0",
     "vitest": "^3.2.4"
   },
+  "overrides": {
+    "vite-plugin-dts": {
+      "ajv": "^8.12.0"
+    }
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@fjell/logging": "^4.4.68",
