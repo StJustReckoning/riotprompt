@@ -86,7 +86,7 @@
     "vitest": "^4.0.17"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.74.0",
     "@fjell/logging": "^4.4.68",
     "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.25.3",
@@ -99,21 +99,21 @@
     "glob": "^11.0.3",
     "js-yaml": "^4.1.1",
     "marked": "^16.0.0",
-    "openai": "^6.15.0",
+    "openai": "^6.22.0",
     "tiktoken": "^1.0.22",
     "undici": "^7.3.0",
     "zod": "^4.3.6",
     "zod-to-json-schema": "^3.25.1"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.74.0",
     "@google/generative-ai": "^0.24.1",
     "@kjerneverk/agentic": "^1.0.7",
     "@kjerneverk/execution": "^1.0.6",
     "@kjerneverk/execution-anthropic": "^1.0.9",
     "@kjerneverk/execution-gemini": "^1.0.7",
     "@kjerneverk/execution-openai": "^1.0.8",
-    "openai": "^6.15.0",
+    "openai": "^6.22.0",
     "tiktoken": "^1.0.22"
   },
   "peerDependenciesMeta": {
