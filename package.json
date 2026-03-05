@@ -1,6 +1,6 @@
 {
   "name": "@kjerneverk/riotprompt",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "_versionReset": "2026-01-15",
   "keywords": [
     "prompt",
@@ -110,9 +110,9 @@
     "@google/generative-ai": "^0.24.1",
     "@kjerneverk/agentic": "^1.0.8",
     "@kjerneverk/execution": "^1.0.7",
-    "@kjerneverk/execution-anthropic": "^1.0.11",
-    "@kjerneverk/execution-gemini": "^1.0.9",
-    "@kjerneverk/execution-openai": "^1.0.10",
+    "@kjerneverk/execution-anthropic": "^1.0.12",
+    "@kjerneverk/execution-gemini": "^1.0.10",
+    "@kjerneverk/execution-openai": "^1.0.11",
     "openai": "^6.22.0",
     "tiktoken": "^1.0.22"
   },
