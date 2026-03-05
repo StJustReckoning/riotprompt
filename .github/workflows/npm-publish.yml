@@ -15,13 +15,20 @@ permissions:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
+      - name: Cache npm artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
       - name: Determine npm tag and publish strategy
         id: npm-tag
         run: |
@@ -54,7 +61,14 @@ jobs:
         if: steps.npm-tag.outputs.should_publish == 'true'
       - run: npm install --verbose --foreground-scripts
         if: steps.npm-tag.outputs.should_publish == 'true'
-        timeout-minutes: 10
+        timeout-minutes: 20
+        env:
+          npm_config_prefer_offline: "true"
+          npm_config_fund: "false"
+          npm_config_audit: "false"
+          npm_config_fetch_retries: "5"
+          npm_config_fetch_retry_mintimeout: "20000"
+          npm_config_fetch_retry_maxtimeout: "120000"
       - name: Update package.json version for pre-release
         if: steps.npm-tag.outputs.should_publish == 'true' && steps.npm-tag.outputs.tag == 'dev'
         run: |

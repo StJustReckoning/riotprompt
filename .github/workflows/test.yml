@@ -22,21 +22,31 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Cache npm artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
       - name: Install dependencies
         run: |
           # Use public npm registry (package-lock.json is gitignored)
           npm config set registry https://registry.npmjs.org/
+          npm config set prefer-offline true
+          npm config set fund false
+          npm config set audit false
           # Clean install to ensure platform-specific optional deps (rollup native bindings) are resolved correctly
           # See: https://github.com/npm/cli/issues/4828
-          rm -rf node_modules package-lock.json
-          npm install --force
-        timeout-minutes: 10
+          rm -rf node_modules
+          npm install --force --no-package-lock --prefer-offline --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+        timeout-minutes: 20
       - run: npm run lint
       - run: npm run build
       - run: npm run test

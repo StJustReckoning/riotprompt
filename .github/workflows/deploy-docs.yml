@@ -21,6 +21,7 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +30,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Cache npm artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package.json', 'docs/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
         
       - name: Install dependencies
-        run: npm install
+        run: npm install --prefer-offline --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+        timeout-minutes: 15
         
       - name: Build library
         run: npm run build
@@ -43,13 +52,14 @@ jobs:
         run: |
           # Change to docs directory and install dependencies
           cd docs
-          npm install
+          npm install --prefer-offline --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
           
           # Copy README.md to public directory so it can be fetched
           cp ../README.md public/
           
           # Build the Vite documentation site
           npm run build
+        timeout-minutes: 15
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
