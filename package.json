@@ -112,7 +112,7 @@
     "@kjerneverk/execution": "^1.0.7",
     "@kjerneverk/execution-anthropic": "^1.0.12",
     "@kjerneverk/execution-gemini": "^1.0.10",
-    "@kjerneverk/execution-openai": "^1.0.11",
+    "@kjerneverk/execution-openai": "^1.0.12",
     "openai": "^6.22.0",
     "tiktoken": "^1.0.22"
   },
