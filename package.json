@@ -141,5 +141,8 @@
     "openai": {
       "optional": true
     }
+  },
+  "publishConfig": {
+    "tag": "dev"
   }
 }
