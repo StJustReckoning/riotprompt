@@ -10,7 +10,6 @@ output/
 input/
 processed/.DS_Store
 **/.DS_Store
-package-lock.json
 processed/
 output/**
 .kodrdriv*
