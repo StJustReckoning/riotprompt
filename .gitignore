@@ -14,3 +14,4 @@ processed/
 output/**
 .kodrdriv*
 agentic-*.md
+package-lock.json
