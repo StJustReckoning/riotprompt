@@ -15,3 +15,4 @@ output/**
 .kodrdriv*
 agentic-*.md
 package-lock.json
+.kodrdriv*
