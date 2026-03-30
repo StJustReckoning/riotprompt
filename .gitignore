@@ -12,7 +12,7 @@ processed/.DS_Store
 **/.DS_Store
 processed/
 output/**
-.kodrdriv*
+.kodrdriv/*
+!.kodrdriv/config.yaml
 agentic-*.md
 package-lock.json
-.kodrdriv*
