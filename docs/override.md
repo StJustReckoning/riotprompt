@@ -174,7 +174,7 @@ While the common usage is via Builder configuration, riotprompt also provides lo
 For example, there may be an `Override` class or methods that you can use on Section objects:
 
 ```ts
-import { Override, createSection } from '@riotprompt';
+import { Override, createSection } from '@kjerneverk/riotprompt';
 
 // Suppose we have a base section created or loaded:
 const baseSection = createSection("Instructions");
@@ -271,7 +271,7 @@ The Override utility supports dynamic content customization through parameters. 
 Consider a scenario where you want to customize a chatbot persona for different clients while maintaining a consistent base structure. You can use parameters in your override files to achieve this:
 
 ```ts
-import { Override, createSection, createParameters } from '@riotprompt';
+import { Override, createSection, createParameters } from '@kjerneverk/riotprompt';
 
 // Create a base assistant persona
 const assistantPersona = createSection("Assistant Persona");
@@ -326,7 +326,7 @@ When combined with environment variables or configuration files, this creates a 
 The Override utility supports custom logging to help debug override operations. When creating an Override instance, you can supply a `logger` property in the options:
 
 ```ts
-import { Override, Logger } from '@riotprompt';
+import { Override, Logger } from '@kjerneverk/riotprompt';
 
 // Create a custom logger
 const myLogger: Logger = {

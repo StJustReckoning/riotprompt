@@ -71,6 +71,6 @@ RiotPrompt helps you:
 
 - **[Core Concepts](core-concepts.md)** - Understand WeightedText, Sections, and prompt structure
 - **[Basic Usage](basic-usage.md)** - Learn how to create and format sections
-- **[Recipes System](recipes.md)** - Discover the revolutionary new way to create prompts
+- **[Builder API](builder.md)** - Programmatic prompt creation with a fluent interface
 - **[Structured Outputs](structured-outputs.md)** - Get validated, type-safe responses from LLMs
 - **[Advanced Usage](advanced-usage.md)** - Explore parameters, weights, and complex structures 

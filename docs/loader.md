@@ -34,7 +34,7 @@ This approach means you can, for example, have a directory of background context
 Typically, you'll create a Loader instance via its factory method and then call methods to load files or directories. For example:
 
 ```ts
-import { Loader, Section } from '@riotprompt';
+import { Loader, Section } from '@kjerneverk/riotprompt';
 
 // Create a Loader instance
 const loader = Loader.create();
@@ -87,7 +87,7 @@ You can call `load` multiple times or even use Loader methods to load individual
 For example, using the Builder (which internally leverages the Loader):
 
 ```ts
-import { Builder, Prompt } from '@riotprompt';
+import { Builder, Prompt } from '@kjerneverk/riotprompt';
 
 const builder = Builder.create({
   basePath: './prompts'
@@ -182,7 +182,7 @@ The Loader supports parameterized content through the `parameters` option in the
 Here's how to use this feature:
 
 ```ts
-import { Loader, Section } from '@riotprompt';
+import { Loader, Section } from '@kjerneverk/riotprompt';
 
 // Create a Loader with parameters
 const loader = Loader.create({

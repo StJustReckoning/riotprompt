@@ -215,22 +215,4 @@ The Builder pattern is ideal for:
 - **Integration with override systems** for customization
 - **Legacy codebases** migrating from manual prompt construction
 
-## Migration to Recipes
-
-For new projects, consider the [Recipes System](recipes.md) which provides a more concise API:
-
-```typescript
-// Builder approach (verbose)
-const builderPrompt = await Builder.create({ basePath: __dirname })
-  .addPersonaPath('persona/developer.md')
-  .addInstructionPath('instructions/commit.md')
-  .addContent(diffContent, { title: 'Diff' })
-  .build();
-
-// Recipes approach (concise)
-const recipePrompt = await quick.commit(diffContent, { 
-  basePath: __dirname 
-});
-```
-
-The Builder remains powerful for complex scenarios requiring detailed control, while Recipes provide a more streamlined experience for common use cases. 
+The Builder is the recommended API for programmatic prompt creation in RiotPrompt. It provides the flexibility and control needed for both simple and complex prompt assembly scenarios.

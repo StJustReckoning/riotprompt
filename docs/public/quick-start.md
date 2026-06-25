@@ -275,7 +275,7 @@ Now that you've created your first prompt, explore these resources to take your 
 - **[Complete Tutorial](tutorial)** - Comprehensive guide to RiotPrompt
 - **[Structured Outputs](structured-outputs)** - Get JSON responses with validation
 - **[Configuration Options](configuration-options)** - Set up defaults
-- **[Recipes System](recipes)** - Programmatic prompt creation
+- **[Builder API](builder)** - Programmatic prompt creation
 
 ### Provider-Specific Guides
 - **[OpenAI Provider](provider-openai)** - GPT-4 and o-series best practices

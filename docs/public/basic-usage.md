@@ -168,6 +168,5 @@ console.log(formatter.format(context));
 Now that you understand basic section creation and formatting, explore these advanced topics:
 
 - **[Advanced Usage](advanced-usage.md)** - Parameters, weights, and dynamic content
-- **[Recipes System](recipes.md)** - Simplified prompt creation with templates
+- **[Builder API](builder.md)** - Programmatic prompt assembly with a fluent interface
 - **[Parser](parser.md)** - Convert Markdown files to structured prompts
-- **[Builder Pattern](builder.md)** - Programmatic prompt assembly 

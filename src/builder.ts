@@ -19,13 +19,16 @@ export type OptionsParam = Required<Pick<Options, 'basePath'>> & Partial<Omit<Op
 
 export interface Instance {
     addPersonaPath(contentPath: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
+    addPersona(content: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     addContextPath(contentPath: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     addInstructionPath(contentPath: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
+    addInstruction(content: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     addContentPath(contentPath: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     addContent(content: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     addContext(context: string, sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     loadContext(contextDirectories: string[], sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
     loadContent(contentDirectories: string[], sectionOptions?: Partial<SectionOptions>): Promise<Instance>;
+    withSchema(schema: any, validator?: any): Instance;
     build(): Promise<Prompt>;
 }
 
@@ -115,6 +118,18 @@ export const create = (builderOptions: OptionsParam): Instance => {
     }
     instance.addPersonaPath = addPersonaPath;
 
+    const addPersona = async (
+        content: string | Buffer,
+        sectionOptions: Partial<SectionOptions> = {}
+    ): Promise<Instance> => {
+        logger.debug("Adding persona", typeof content);
+        const currentOptions = loadOptions(sectionOptions);
+        const parsedPersonaSection: Section<Instruction> = await parser.parse<Instruction>(content, currentOptions);
+        personaSection.add(parsedPersonaSection);
+        return instance as Instance;
+    };
+    instance.addPersona = addPersona;
+
     const addContextPath = async (
         contentPath: string,
         sectionOptions: Partial<SectionOptions> = {}
@@ -138,6 +153,18 @@ export const create = (builderOptions: OptionsParam): Instance => {
         return instance as Instance;
     }
     instance.addInstructionPath = addInstructionPath;
+
+    const addInstruction = async (
+        content: string | Buffer,
+        sectionOptions: Partial<SectionOptions> = {}
+    ): Promise<Instance> => {
+        logger.debug("Adding instruction", typeof content);
+        const currentOptions = loadOptions(sectionOptions);
+        const parsedInstructionSection: Section<Instruction> = await parser.parse<Instruction>(content, currentOptions);
+        instructionSection.add(parsedInstructionSection);
+        return instance as Instance;
+    };
+    instance.addInstruction = addInstruction;
 
     const addContentPath = async (
         contentPath: string,
@@ -175,9 +202,18 @@ export const create = (builderOptions: OptionsParam): Instance => {
     }
     instance.addContext = addContext;
 
+    let schema: any = undefined;
+    let validator: any = undefined;
+    const withSchema = (s: any, v?: any): Instance => {
+        schema = s;
+        validator = v;
+        return instance as Instance;
+    }
+    instance.withSchema = withSchema;
+
     const build = async () => {
         logger.debug("Building prompt", {});
-        const prompt = createPrompt({ persona: personaSection, contexts: contextSection, instructions: instructionSection, contents: contentSection });
+        const prompt = createPrompt({ persona: personaSection, contexts: contextSection, instructions: instructionSection, contents: contentSection, schema, validator });
         return prompt;
     }
     instance.build = build;

@@ -39,7 +39,7 @@ Once you have a Parser instance, use the `parse` method to convert a markdown st
 **Example:** Parse a markdown string with multiple sections.
 
 ```ts
-import { Parser, Section } from '@riotprompt';
+import { Parser, Section } from '@kjerneverk/riotprompt';
 
 const markdownContent = `
 # Instructions

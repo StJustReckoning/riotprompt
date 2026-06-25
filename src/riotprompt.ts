@@ -1,14 +1,9 @@
 /**
  * RiotPrompt - Structured Prompt Engineering for LLMs
  *
- * Note: Many components are now available as separate packages for lighter installs:
- * - `execution` - Provider interfaces (no SDK deps)
- * - `execution-openai` - OpenAI provider
- * - `execution-anthropic` - Anthropic provider
- * - `execution-gemini` - Gemini provider
- * - `agentic` - Tool registry, context management
- *
- * This main package re-exports everything for backward compatibility.
+ * Agentic components (conversation management, tools, iteration strategies,
+ * reflection, token budgets, recipes) are available in the separate
+ * `@kjerneverk/agentic` package.
  *
  * @packageDocumentation
  */
@@ -29,26 +24,6 @@ export * as Chat from "./chat";
 export * as Loader from "./loader";
 export * as Override from "./override";
 export * as Builder from "./builder";
-
-// ===== RECIPES SYSTEM =====
-export * as Recipes from "./recipes";
-export { cook, recipe, registerTemplates, getTemplates, clearTemplates, generateToolGuidance } from "./recipes";
-
-// ===== CONVERSATION MANAGEMENT =====
-export { ConversationBuilder } from "./conversation";
-export { ContextManager } from "./context-manager";
-export { TokenCounter, TokenBudgetManager } from "./token-budget";
-export { MessageBuilder, MessageTemplates } from "./message-builder";
-export { ConversationLogger, ConversationReplayer } from "./conversation-logger";
-
-// ===== TOOL INTEGRATION =====
-export { ToolRegistry } from "./tools";
-
-// ===== ITERATION STRATEGIES =====
-export { StrategyExecutor, IterationStrategyFactory } from "./iteration-strategy";
-
-// ===== OBSERVABILITY =====
-export { MetricsCollector, ReflectionReportGenerator } from "./reflection";
 
 export * as Serializer from "./serializer";
 export * as Writer from "./writer";
@@ -115,75 +90,6 @@ export {
     configureSecretGuard,
 } from './error-handling';
 export type { ErrorSanitizerConfig, SanitizedErrorResult, ErrorHandlingOptions } from './error-handling';
-export type { RecipeConfig, ContentItem, TemplateConfig, ToolGuidanceConfig } from "./recipes";
-export type {
-    ConversationMessage,
-    ConversationBuilderConfig,
-    ConversationMetadata,
-    ConversationState,
-    InjectOptions,
-    ToolCall
-} from "./conversation";
-export type {
-    DynamicContentItem,
-    TrackedContextItem,
-    ContextStats
-} from "./context-manager";
-export type {
-    TokenUsage,
-    TokenBudgetConfig,
-    CompressionStats,
-    CompressionStrategy
-} from "./token-budget";
-export type {
-    SemanticRole,
-    MessageMetadata
-} from "./message-builder";
-export type {
-    IterationStrategy,
-    StrategyPhase,
-    StrategyState,
-    StrategyResult,
-    StrategyContext,
-    PhaseResult,
-    ToolResult,
-    LLMClient,
-    ToolUsagePolicy,
-    Insight
-} from "./iteration-strategy";
-export type {
-    ReflectionReport,
-    ReflectionConfig,
-    AgenticExecutionMetrics,
-    ToolExecutionMetric,
-    ToolStats,
-    Recommendation,
-    ToolEffectivenessAnalysis,
-    PerformanceInsights,
-    QualityAssessment
-} from "./reflection";
-export type {
-    LogConfig,
-    LogFormat,
-    LoggedConversation,
-    ConversationLogMetadata,
-    LoggedMessage,
-    ToolCallLog,
-    ConversationSummary,
-    ReplayOptions,
-    ReplayResult
-} from "./conversation-logger";
-export type {
-    Tool,
-    ToolParameter,
-    ToolContext,
-    ToolExample,
-    ToolCost,
-    OpenAITool,
-    AnthropicTool,
-    ToolDefinition,
-    ToolUsageStats
-} from "./tools";
 export type {
     ModelConfig,
     PersonaRole,

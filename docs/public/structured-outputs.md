@@ -1,452 +1,261 @@
 # Structured Outputs
 
-RiotPrompt provides powerful support for structured outputs using JSON schemas, allowing you to ensure that LLM responses conform to a specific format. This feature works seamlessly across OpenAI, Anthropic (Claude), and Google Gemini with automatic schema conversion.
+RiotPrompt supports structured outputs (JSON Schema) for all providers, enabling type-safe responses from LLMs.
 
-## What are Structured Outputs?
+## Overview
 
-Structured outputs allow you to define a schema that the LLM must follow when generating responses. Instead of receiving free-form text, you get JSON data that conforms to your specified structure.
+Structured outputs allow you to specify a JSON Schema that the LLM must follow in its response. This is useful for:
 
-**Benefits:**
-- **Type Safety**: Define exactly what fields and types you expect
-- **Validation**: Automatic validation of LLM responses
-- **Consistency**: Get predictable, parseable responses every time
-- **Integration**: Easily integrate LLM responses into your application logic
+- Data extraction
+- Classification tasks
+- Multi-field analysis
+- Any scenario where you need predictable, parseable responses
 
-## Using Zod Schemas
-
-RiotPrompt uses [Zod](https://zod.dev/) for schema definition, providing excellent TypeScript integration and validation.
-
-### Basic Example
+## Basic Usage
 
 ```typescript
-import { cook } from 'riotprompt';
-import { z } from 'zod';
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
 
-// Define your schema
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a data analyst.')
+  .addInstruction('Analyze the following data and provide a structured response.')
+  .addContent('Q1 revenue: $1.2M, Q2 revenue: $1.5M, Q3 revenue: $1.8M')
+  .withSchema({
+    type: "json_schema",
+    json_schema: {
+      name: "analysis",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+          trend: { type: "string" },
+          confidence: { type: "number" },
+        },
+        required: ["summary", "trend", "confidence"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  })
+  .build();
+
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// result.content is a JSON string matching the schema
+const analysis = JSON.parse(result.content);
+console.log(analysis.summary);  // "Revenue shows consistent growth..."
+console.log(analysis.trend);    // "increasing"
+console.log(analysis.confidence); // 0.95
+```
+
+## Using Zod for Schema Definition
+
+For better type safety, use [Zod](https://zod.dev) to define schemas and convert them to JSON Schema:
+
+```typescript
+import { z } from 'zod';
+import zodToJsonSchema from 'zod-to-json-schema';
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
+
+// Define your response schema with Zod
 const responseSchema = z.object({
   summary: z.string(),
   tags: z.array(z.string()),
-  confidence: z.number().min(0).max(1)
+  confidence: z.number().min(0).max(1),
 });
 
-// Create a prompt with structured output
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a content analyst' },
-  instructions: [
-    { content: 'Analyze the provided content and extract key information' }
-  ],
-  content: [
-    { content: articleText, title: 'Article' }
-  ],
-  schema: responseSchema
+// Convert to JSON Schema
+const jsonSchema = zodToJsonSchema(responseSchema, "response");
+const actualSchema = (jsonSchema as any).definitions?.response || jsonSchema;
+
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a helpful assistant.')
+  .addInstruction('Analyze the following text and provide a structured response.')
+  .addContent('The new product launch exceeded expectations...')
+  .withSchema({
+    type: "json_schema",
+    json_schema: {
+      name: "response",
+      schema: actualSchema,
+      strict: true,
+    },
+  })
+  .build();
+
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
 });
+
+// Parse and validate with Zod
+const parsed = responseSchema.parse(JSON.parse(result.content));
+console.log(parsed.summary);
+console.log(parsed.tags);
 ```
 
-### Executing with Validation
-
-When you execute a prompt with a schema, RiotPrompt automatically validates the response:
-
-```typescript
-import { executeChat } from 'riotprompt';
-
-const result = await executeChat(prompt, {
-  model: 'gpt-4o',
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// result.content is automatically validated against your schema
-console.log(result.content.summary);
-console.log(result.content.tags);
-console.log(result.content.confidence);
-```
-
-## How It Works Across Providers
-
-RiotPrompt automatically converts your Zod schema to the format required by each LLM provider:
+## Provider Compatibility
 
 ### OpenAI
 
-For OpenAI models, RiotPrompt:
-1. Converts your Zod schema to JSON Schema format
-2. Wraps it in OpenAI's `json_schema` response format structure
-3. Uses the `response_format` parameter to enforce the schema
+OpenAI supports structured outputs natively with `strict: true`. The schema is passed as `response_format` in the API call.
 
 ```typescript
-// Your Zod schema is automatically converted to:
-{
+const request = formatter.formatPrompt('gpt-4o', prompt);
+// Formatter automatically sets request.responseFormat from prompt.schema
+```
+
+### Anthropic
+
+Anthropic supports JSON output via system prompts. The schema is included in the formatted messages.
+
+```typescript
+const request = formatter.formatPrompt('claude-3-5-sonnet-20241022', prompt);
+```
+
+### Gemini
+
+Gemini supports structured outputs via `responseMimeType` and `responseSchema`.
+
+```typescript
+const request = formatter.formatPrompt('gemini-2.0-flash', prompt);
+```
+
+## Advanced Patterns
+
+### Nested Objects
+
+```typescript
+const schema = {
   type: "json_schema",
   json_schema: {
-    name: "response",
-    schema: { /* your JSON schema */ }
-  }
-}
-```
-
-### Anthropic (Claude)
-
-For Anthropic models, RiotPrompt:
-1. Converts your schema to Anthropic's Tool Use format
-2. Creates a forced tool call with your schema as the input schema
-3. Extracts the structured result to match the expected format
-
-```typescript
-// Your schema becomes a tool that Claude must call:
-{
-  name: "response",
-  description: "Output data in this structured format",
-  input_schema: { /* your JSON schema */ }
-}
-```
-
-This approach leverages Claude's tool use capabilities to ensure structured outputs.
-
-### Google Gemini
-
-For Gemini models, RiotPrompt:
-1. Converts your schema to Gemini's Schema format
-2. Uses the `responseSchema` generation config parameter
-3. Maps type names to Gemini's expected format (e.g., `"object"` → `"OBJECT"`)
-
-```typescript
-// Your schema is converted to Gemini's format:
-generationConfig: {
-  responseSchema: {
-    type: "OBJECT",
-    properties: { /* your schema properties */ }
-  }
-}
-```
-
-## Common Use Cases
-
-### 1. Content Analysis
-
-Extract structured information from text:
-
-```typescript
-const analysisSchema = z.object({
-  mainTopic: z.string().describe('The primary topic of the content'),
-  sentiment: z.enum(['positive', 'negative', 'neutral']),
-  keyPoints: z.array(z.string()).describe('3-5 key points'),
-  entities: z.array(z.object({
-    name: z.string(),
-    type: z.enum(['person', 'organization', 'location', 'other'])
-  })),
-  readingLevel: z.enum(['beginner', 'intermediate', 'advanced'])
-});
-
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a content analysis expert' },
-  instructions: [
-    { content: 'Analyze the content and extract structured information' }
-  ],
-  content: [{ content: document }],
-  schema: analysisSchema
-});
-```
-
-### 2. Code Review
-
-Generate structured code review feedback:
-
-```typescript
-const codeReviewSchema = z.object({
-  overallScore: z.number().min(0).max(10),
-  issues: z.array(z.object({
-    severity: z.enum(['critical', 'major', 'minor', 'suggestion']),
-    line: z.number().optional(),
-    description: z.string(),
-    recommendation: z.string()
-  })),
-  strengths: z.array(z.string()),
-  securityConcerns: z.array(z.string()),
-  performanceIssues: z.array(z.string()),
-  summary: z.string()
-});
-
-const prompt = await cook({
-  basePath: __dirname,
-  template: 'codeReview',
-  content: [{ content: sourceCode, title: 'Code to Review' }],
-  schema: codeReviewSchema
-});
-```
-
-### 3. Data Extraction
-
-Extract specific data from unstructured text:
-
-```typescript
-const extractionSchema = z.object({
-  name: z.string(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  company: z.string().optional(),
-  position: z.string().optional(),
-  interests: z.array(z.string()),
-  yearsOfExperience: z.number().optional()
-});
-
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a data extraction specialist' },
-  instructions: [
-    { content: 'Extract contact information from the provided text' }
-  ],
-  content: [{ content: resumeText }],
-  schema: extractionSchema
-});
-```
-
-### 4. Multi-Step Reasoning
-
-Get step-by-step reasoning with structured output:
-
-```typescript
-const reasoningSchema = z.object({
-  problem: z.string().describe('Restated problem'),
-  steps: z.array(z.object({
-    stepNumber: z.number(),
-    description: z.string(),
-    reasoning: z.string(),
-    result: z.string()
-  })),
-  finalAnswer: z.string(),
-  confidence: z.number().min(0).max(1),
-  assumptions: z.array(z.string())
-});
-
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a logical reasoning expert' },
-  instructions: [
-    { content: 'Solve the problem step by step' }
-  ],
-  reasoning: [
-    { content: 'Show your work at each step' }
-  ],
-  content: [{ content: problemDescription }],
-  schema: reasoningSchema
-});
-```
-
-### 5. Classification Tasks
-
-Classify content into predefined categories:
-
-```typescript
-const classificationSchema = z.object({
-  primaryCategory: z.enum(['technology', 'business', 'science', 'arts', 'sports', 'politics']),
-  subCategories: z.array(z.string()),
-  tags: z.array(z.string()).max(10),
-  confidence: z.object({
-    primaryCategory: z.number().min(0).max(1),
-    overall: z.number().min(0).max(1)
-  }),
-  justification: z.string()
-});
-
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a content classification expert' },
-  instructions: [
-    { content: 'Classify the article into appropriate categories' }
-  ],
-  content: [{ content: article }],
-  schema: classificationSchema
-});
-```
-
-## Schema from File
-
-You can also load schemas from JSON files:
-
-```typescript
-// schema.json
-{
-  "type": "object",
-  "properties": {
-    "name": { "type": "string" },
-    "age": { "type": "number" }
-  },
-  "required": ["name"]
-}
-
-// In your code
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a data processor' },
-  schema: './schema.json'  // Path to schema file
-});
-```
-
-## Schema as Plain Object
-
-You can also pass a plain JSON Schema object:
-
-```typescript
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a helpful assistant' },
-  schema: {
-    type: "object",
-    properties: {
-      answer: { type: "string" },
-      confidence: { type: "number", minimum: 0, maximum: 1 }
+    name: "report",
+    schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        sections: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              heading: { type: "string" },
+              content: { type: "string" },
+              priority: { type: "string", enum: ["high", "medium", "low"] },
+            },
+            required: ["heading", "content", "priority"],
+            additionalProperties: false,
+          },
+        },
+        metadata: {
+          type: "object",
+          properties: {
+            author: { type: "string" },
+            date: { type: "string" },
+          },
+          required: ["author", "date"],
+          additionalProperties: false,
+        },
+      },
+      required: ["title", "sections", "metadata"],
+      additionalProperties: false,
     },
-    required: ["answer", "confidence"]
-  }
-});
+    strict: true,
+  },
+};
+
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a report generator.')
+  .addContent('Generate a quarterly report for Q3 2024...')
+  .withSchema(schema)
+  .build();
 ```
 
-## Automatic Validation
-
-When you use a Zod schema, RiotPrompt automatically validates the LLM's response:
+### Enum Constraints
 
 ```typescript
-const schema = z.object({
-  name: z.string(),
-  age: z.number().positive()
-});
+const schema = {
+  type: "json_schema",
+  json_schema: {
+    name: "classification",
+    schema: {
+      type: "object",
+      properties: {
+        category: { type: "string", enum: ["bug", "feature", "question", "other"] },
+        priority: { type: "string", enum: ["critical", "high", "medium", "low"] },
+        description: { type: "string" },
+      },
+      required: ["category", "priority", "description"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+};
 
-const prompt = await cook({
-  basePath: __dirname,
-  schema: schema  // Validation is automatic
-});
-
-const result = await executeChat(prompt, { model: 'gpt-4o' });
-
-// If validation fails, an error is thrown
-// If successful, result.content is typed and validated
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a support ticket classifier.')
+  .addContent('The app crashes when I click submit...')
+  .withSchema(schema)
+  .build();
 ```
 
-## Best Practices
-
-### 1. Use Descriptions
-
-Add descriptions to help the LLM understand what you expect:
+### Combining with File-Based Content
 
 ```typescript
-const schema = z.object({
-  summary: z.string().describe('A concise summary in 2-3 sentences'),
-  keyPoints: z.array(z.string()).describe('3-5 most important points'),
-  sentiment: z.enum(['positive', 'negative', 'neutral']).describe('Overall sentiment of the content')
-});
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersonaPath('persona/analyst.md')
+  .addInstructionPath('instructions/extract.md')
+  .addContentPath('data/customer-feedback.txt')
+  .withSchema({
+    type: "json_schema",
+    json_schema: {
+      name: "feedback_analysis",
+      schema: {
+        type: "object",
+        properties: {
+          sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
+          keyPoints: { type: "array", items: { type: "string" } },
+          actionItems: { type: "array", items: { type: "string" } },
+        },
+        required: ["sentiment", "keyPoints", "actionItems"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  })
+  .build();
 ```
 
-### 2. Set Appropriate Constraints
+## Validation
 
-Use Zod's validation methods to enforce constraints:
+Always validate the LLM response, even with structured outputs:
 
 ```typescript
-const schema = z.object({
-  title: z.string().min(10).max(100),
-  tags: z.array(z.string()).min(1).max(5),
-  score: z.number().min(0).max(100).int(),
-  email: z.string().email().optional()
+import { z } from 'zod';
+
+const responseSchema = z.object({
+  summary: z.string(),
+  tags: z.array(z.string()),
+  confidence: z.number().min(0).max(1),
 });
+
+try {
+  const parsed = responseSchema.parse(JSON.parse(result.content));
+  // Use the validated data
+  console.log(parsed);
+} catch (error) {
+  console.error('Response did not match schema:', error);
+}
 ```
 
-### 3. Use Enums for Fixed Options
+## Related
 
-When you have a fixed set of options, use enums:
-
-```typescript
-const schema = z.object({
-  category: z.enum(['bug', 'feature', 'improvement', 'documentation']),
-  priority: z.enum(['low', 'medium', 'high', 'critical']),
-  status: z.enum(['open', 'in-progress', 'resolved', 'closed'])
-});
-```
-
-### 4. Keep Schemas Focused
-
-Don't make your schemas too complex. Break down complex tasks:
-
-```typescript
-// Instead of one huge schema
-// Break it into focused steps
-
-// Step 1: Extract data
-const extractionSchema = z.object({ /* ... */ });
-
-// Step 2: Analyze data
-const analysisSchema = z.object({ /* ... */ });
-
-// Step 3: Generate recommendations
-const recommendationSchema = z.object({ /* ... */ });
-```
-
-### 5. Provide Examples
-
-Use the `examples` section in your prompt to show the LLM what you expect:
-
-```typescript
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a data extractor' },
-  examples: [
-    {
-      content: JSON.stringify({
-        input: 'John Doe works at Acme Corp',
-        output: { name: 'John Doe', company: 'Acme Corp' }
-      }, null, 2)
-    }
-  ],
-  schema: extractionSchema
-});
-```
-
-## Limitations and Considerations
-
-### Token Limits
-
-Structured outputs can increase token usage:
-- The schema is sent with each request
-- Some providers (like Anthropic) require additional prompt formatting
-
-### Model Support
-
-Not all models support structured outputs equally well:
-- **OpenAI**: Excellent support, especially with GPT-4 and GPT-4o
-- **Anthropic**: Good support via tool use (Claude 3+ models)
-- **Gemini**: Good support with Gemini 1.5+ models
-
-### Schema Complexity
-
-Very complex schemas may:
-- Confuse some models
-- Increase latency
-- Require more tokens
-
-Keep schemas as simple as possible while meeting your requirements.
-
-## Troubleshooting
-
-### Schema Validation Errors
-
-If you're getting validation errors:
-
-1. **Check your schema constraints**: Make sure they're not too restrictive
-2. **Add descriptions**: Help the LLM understand what you want
-3. **Simplify the schema**: Complex nested structures can be challenging
-4. **Provide examples**: Show the LLM what successful output looks like
-
-### Model Not Following Schema
-
-If the model isn't following your schema:
-
-1. **Add clear instructions**: Explicitly tell the model to follow the schema
-2. **Use examples**: Show what correct output looks like
-3. **Try a different model**: Some models handle structured outputs better
-4. **Check schema compatibility**: Ensure your schema features are supported
-
-## Related Documentation
-
-- [Recipes System](recipes) - Learn about the `cook()` function
-- [API Reference](api-reference) - Complete API documentation
-- [CLI Execute Command](cli-execute) - Execute prompts from the command line
-- [Advanced Usage](advanced-usage) - Advanced prompt engineering techniques
-
+- [Builder API](builder.md) - Programmatic prompt creation
+- [Core Concepts](core-concepts.md) - Understanding prompts, sections, and items
+- [OpenAI Provider](provider-openai.md) - Provider-specific details
+- [Anthropic Provider](provider-anthropic.md) - Provider-specific details
+- [Gemini Provider](provider-gemini.md) - Provider-specific details

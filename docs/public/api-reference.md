@@ -236,72 +236,6 @@ interface OverrideOptions {
 }
 ```
 
-## Recipes API
-
-### Configuration-Driven Recipe Creation
-
-```typescript
-function cook(config: RecipeConfig): Promise<Prompt>
-
-interface RecipeConfig {
-  basePath: string;
-  overridePaths?: string[];
-  overrides?: boolean;
-  parameters?: Parameters;
-  
-  // Template inheritance
-  template?: string;
-  
-  // Content sections
-  persona?: ContentItem;
-  instructions?: ContentItem[];
-  content?: ContentItem[];
-  context?: ContentItem[];
-}
-
-type ContentItem = string | {
-  content?: string;
-  path?: string;
-  directories?: string[];
-  title?: string;
-  weight?: number;
-}
-```
-
-### Fluent Recipe Builder
-
-```typescript
-function recipe(basePath: string): RecipeBuilder
-
-interface RecipeBuilder {
-  template(name: string): RecipeBuilder;
-  with(config: Partial<RecipeConfig>): RecipeBuilder;
-  persona(persona: ContentItem): RecipeBuilder;
-  instructions(...instructions: ContentItem[]): RecipeBuilder;
-  content(...content: ContentItem[]): RecipeBuilder;
-  context(...context: ContentItem[]): RecipeBuilder;
-  parameters(params: Parameters): RecipeBuilder;
-  overrides(enabled: boolean): RecipeBuilder;
-  overridePaths(paths: string[]): RecipeBuilder;
-  cook(): Promise<Prompt>;
-}
-```
-
-### Template Configuration
-
-```typescript
-function registerTemplates(templates: Record<string, TemplateConfig>): void
-function getTemplates(): Record<string, TemplateConfig>
-function clearTemplates(): void
-
-interface TemplateConfig {
-  persona?: ContentItem;
-  instructions?: ContentItem[];
-  content?: ContentItem[];
-  context?: ContentItem[];
-}
-```
-
 ## Prompt
 
 The final assembled prompt with formatting capabilities.
@@ -369,14 +303,5 @@ import {
   Loader,
   Builder,
   Override
-} from '@kjerneverk/riotprompt';
-
-// Recipes system
-import {
-  cook,
-  recipe,
-  registerTemplates,
-  getTemplates,
-  clearTemplates
 } from '@kjerneverk/riotprompt';
 ``` 

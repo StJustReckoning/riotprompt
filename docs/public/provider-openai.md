@@ -1,356 +1,211 @@
 # OpenAI Provider
 
-RiotPrompt provides seamless integration with OpenAI models, automatically adapting your prompts to meet OpenAI's API expectations.
+This guide shows how to use RiotPrompt with OpenAI models (GPT-4o, GPT-4, GPT-3.5 Turbo, etc.).
 
-## Supported Models
-
-RiotPrompt works with all OpenAI chat models, including:
-
-- **GPT-4 Series**: `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`
-- **GPT-3.5**: `gpt-3.5-turbo`
-- **O-Series (Reasoning Models)**: `o1`, `o1-mini`, `o1-preview`
-
-For a complete list of available models, see the [OpenAI Models Documentation](https://platform.openai.com/docs/models).
-
-## Getting Started
-
-### API Key Setup
-
-Get your OpenAI API key from the [OpenAI Platform](https://platform.openai.com/api-keys).
-
-Set it as an environment variable:
+## Installation
 
 ```bash
-export OPENAI_API_KEY=sk-proj-...
+npm install @kjerneverk/riotprompt
 ```
 
-Or use a `.env` file:
-
-```bash
-OPENAI_API_KEY=sk-proj-...
-```
-
-### Basic Usage
+## Quick Start
 
 ```typescript
-import { cook, executeChat } from 'riotprompt';
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
 
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a helpful AI assistant' },
-  instructions: [
-    { content: 'Provide clear and concise answers' }
-  ],
-  content: [
-    { content: 'What is machine learning?' }
-  ]
-});
+// Build a prompt
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a helpful AI assistant.')
+  .addInstruction('Provide clear and concise answers.')
+  .addContent('What is machine learning?')
+  .build();
 
-const result = await executeChat(prompt, {
-  model: 'gpt-4o',
-  apiKey: process.env.OPENAI_API_KEY
+// Format for OpenAI
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+
+// Execute
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 console.log(result.content);
 ```
 
-## How RiotPrompt Adapts to OpenAI
+## Using Files
 
-### Message Role Handling
-
-RiotPrompt automatically maps prompt sections to appropriate OpenAI message roles:
-
-#### Standard Models (GPT-4, GPT-3.5)
-
-- **Persona, Constraints, Tone** → `system` role
-- **Instructions, Context, Content** → `user` role
-- **Examples** → `user` role (formatted as few-shot examples)
+Load persona, instructions, and content from files:
 
 ```typescript
-// This prompt structure:
-const prompt = await cook({
-  persona: { content: 'You are an expert programmer' },
-  constraints: [{ content: 'Keep responses under 500 words' }],
-  instructions: [{ content: 'Explain this code' }],
-  content: [{ content: codeSnippet }]
-});
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
 
-// Becomes OpenAI messages:
-[
-  {
-    role: "system",
-    content: "You are an expert programmer\n\nKeep responses under 500 words"
-  },
-  {
-    role: "user",
-    content: "Explain this code\n\n{codeSnippet}"
-  }
-]
-```
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersonaPath('persona/default.md')
+  .addInstructionPath('instructions/analyze.md')
+  .addContentPath('data/report.txt')
+  .build();
 
-#### O-Series Models (o1, o1-mini)
-
-O-series models use a special `developer` role instead of `system`:
-
-- **Persona, Constraints, Tone** → `developer` role
-- **Instructions, Context, Content** → `user` role
-
-RiotPrompt automatically detects o-series models and uses the correct role.
-
-```typescript
-const prompt = await cook({
-  persona: { content: 'You are a reasoning expert' },
-  instructions: [{ content: 'Think through this problem step by step' }]
-});
-
-// When used with o1:
-const result = await executeChat(prompt, {
-  model: 'o1',  // Automatically uses 'developer' role
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 ```
 
-### Structured Outputs
+## Structured Outputs
 
-OpenAI has excellent support for structured outputs using JSON Schema. RiotPrompt automatically converts Zod schemas to OpenAI's format:
+Use JSON Schema for structured responses:
+
+```typescript
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
+
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a data analyst.')
+  .addInstruction('Analyze the following data and provide a structured response.')
+  .addContent('Q1 revenue: $1.2M, Q2 revenue: $1.5M, Q3 revenue: $1.8M')
+  .withSchema({
+    type: "json_schema",
+    json_schema: {
+      name: "analysis",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+          trend: { type: "string" },
+          confidence: { type: "number" },
+        },
+        required: ["summary", "trend", "confidence"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  })
+  .build();
+
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// result.content is a JSON string matching the schema
+const analysis = JSON.parse(result.content);
+console.log(analysis.summary);
+```
+
+### Using Zod for Schema Definition
+
+You can use [Zod](https://zod.dev) to define schemas and convert them to JSON Schema:
 
 ```typescript
 import { z } from 'zod';
+import zodToJsonSchema from 'zod-to-json-schema';
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
 
-const schema = z.object({
+const responseSchema = z.object({
   summary: z.string(),
-  keyPoints: z.array(z.string()),
-  sentiment: z.enum(['positive', 'negative', 'neutral'])
+  tags: z.array(z.string()),
+  confidence: z.number().min(0).max(1),
 });
 
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a content analyst' },
-  content: [{ content: article }],
-  schema: schema
-});
+const jsonSchema = zodToJsonSchema(responseSchema, "response");
+const actualSchema = (jsonSchema as any).definitions?.response || jsonSchema;
 
-// RiotPrompt converts to OpenAI format:
-{
-  response_format: {
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a helpful assistant.')
+  .addContent('Analyze this text: ...')
+  .withSchema({
     type: "json_schema",
     json_schema: {
       name: "response",
-      schema: { /* JSON Schema from your Zod schema */ }
-    }
-  }
-}
-```
+      schema: actualSchema,
+      strict: true,
+    },
+  })
+  .build();
 
-The structured output is automatically validated against your Zod schema.
-
-[Learn more about Structured Outputs →](structured-outputs)
-
-### Response Format Options
-
-OpenAI supports several response format options:
-
-1. **Text** (default) - Standard text responses
-2. **JSON Schema** - Structured outputs with validation (recommended)
-3. **JSON Mode** - Free-form JSON (less structured than JSON Schema)
-
-RiotPrompt uses JSON Schema mode when you provide a `schema` option, ensuring type-safe, validated responses.
-
-## Best Practices for OpenAI
-
-### 1. Choose the Right Model
-
-- **GPT-4o**: Best for most tasks, excellent balance of speed and capability
-- **GPT-4o-mini**: Fast and cost-effective for simpler tasks
-- **GPT-4**: Highest quality for complex reasoning
-- **O-series**: Best for tasks requiring deep reasoning and problem-solving
-
-### 2. Use System Messages Effectively
-
-OpenAI models respond well to clear system messages (personas):
-
-```typescript
-const prompt = await cook({
-  persona: {
-    content: `You are an expert Python developer with 15 years of experience.
-You specialize in writing clean, maintainable code and explaining complex concepts clearly.`
-  },
-  // ...
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 ```
 
-### 3. Structure Your Prompts
+## Model Selection
 
-Organize prompts with clear sections:
+RiotPrompt automatically maps model names to the correct system role:
+
+| Model | System Role | Notes |
+|-------|-------------|-------|
+| `gpt-4o` | `system` | Latest multimodal model |
+| `gpt-4o-mini` | `system` | Cost-effective option |
+| `gpt-4-turbo` | `system` | Previous generation |
+| `gpt-3.5-turbo` | `system` | Legacy model |
+| `o1` | `developer` | Reasoning model (uses developer role) |
+| `o3-mini` | `developer` | Cost-effective reasoning model |
 
 ```typescript
-const prompt = await cook({
-  persona: { content: 'You are a code reviewer' },
-  constraints: [
-    { content: 'Focus on security and performance' },
-    { content: 'Provide specific line numbers for issues' }
-  ],
-  context: [
-    { content: projectDescription, title: 'Project Context' }
-  ],
-  instructions: [
-    { content: 'Review the code for potential issues' }
-  ],
-  content: [
-    { content: sourceCode, title: 'Code to Review' }
-  ]
-});
+// The formatter handles role mapping automatically
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('o1', prompt);
+// Messages will use "developer" role instead of "system"
 ```
 
-### 4. Use Structured Outputs for Parseable Data
+## Advanced Configuration
 
-When you need JSON output, always use schemas:
-
-```typescript
-// ✅ Good: Type-safe and validated
-const schema = z.object({
-  issues: z.array(z.object({
-    line: z.number(),
-    severity: z.enum(['low', 'medium', 'high']),
-    description: z.string()
-  }))
-});
-
-const prompt = await cook({
-  // ...
-  schema: schema
-});
-
-// ❌ Avoid: Asking for JSON without schema
-const prompt = await cook({
-  instructions: [
-    { content: 'Return your response as JSON' }  // Unreliable
-  ]
-});
-```
-
-### 5. Temperature and Token Settings
-
-Adjust parameters based on your use case:
+### Temperature and Max Tokens
 
 ```typescript
-// For factual, consistent responses
-const result = await executeChat(prompt, {
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
   model: 'gpt-4o',
-  temperature: 0.2,    // Low temperature for consistency
-  maxTokens: 1000
-});
-
-// For creative tasks
-const result = await executeChat(prompt, {
-  model: 'gpt-4o',
-  temperature: 0.8,    // Higher temperature for creativity
-  maxTokens: 2000
+  temperature: 0.7,
+  maxTokens: 2000,
 });
 ```
 
-### 6. Token Efficiency
-
-GPT-4 models can be expensive. Optimize token usage:
-
-- Use `gpt-4o-mini` for simpler tasks
-- Keep system messages concise
-- Use structured outputs to avoid parsing overhead
-- Set appropriate `maxTokens` limits
+### Loading Content from Directories
 
 ```typescript
-const prompt = await cook({
-  persona: { content: 'You are a helpful assistant' },  // Concise
-  instructions: [
-    { content: 'Answer in 2-3 sentences' }  // Limit response length
-  ],
-  content: [{ content: question }]
-});
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersonaPath('persona/default.md')
+  .addInstructionPath('instructions/analyze.md')
+  .loadContent(['data/reports', 'data/logs'])
+  .build();
 ```
 
-## Token Counting
+### Override System
 
-RiotPrompt includes token counting utilities for OpenAI models:
+Override specific sections without modifying files:
 
 ```typescript
-import { countTokens } from 'riotprompt';
-
-const prompt = await cook({
-  // ... your prompt
-});
-
-const tokenCount = countTokens(prompt, 'gpt-4o');
-console.log(`Estimated tokens: ${tokenCount}`);
+const prompt = await Builder.create({
+  basePath: __dirname,
+  overrides: true,
+})
+  .addPersonaPath('persona/default.md')
+  .addInstructionPath('instructions/analyze.md')
+  .addContent('Override content here')
+  .build();
 ```
 
 ## Error Handling
 
-Handle common OpenAI errors gracefully:
-
 ```typescript
 try {
-  const result = await executeChat(prompt, {
-    model: 'gpt-4o',
-    apiKey: process.env.OPENAI_API_KEY
+  const result = await Execution.execute(request, {
+    apiKey: process.env.OPENAI_API_KEY!,
   });
+  console.log(result.content);
 } catch (error) {
-  if (error.status === 401) {
-    console.error('Invalid API key');
-  } else if (error.status === 429) {
-    console.error('Rate limit exceeded');
-  } else if (error.status === 500) {
-    console.error('OpenAI server error');
-  } else {
-    console.error('Unexpected error:', error);
-  }
+  console.error('OpenAI API error:', error);
 }
 ```
 
-## Model-Specific Features
+## Related
 
-### GPT-4o and GPT-4o-mini
-
-- Fast response times
-- Excellent structured output support
-- Native function calling
-- Vision capabilities (when using image inputs)
-
-### O-Series Models (o1, o1-mini)
-
-- Extended thinking time for complex problems
-- Uses `developer` role (automatically handled by RiotPrompt)
-- Best for reasoning, math, and coding problems
-- Higher token costs but superior reasoning
-
-```typescript
-// RiotPrompt automatically adapts for o1
-const prompt = await cook({
-  persona: { content: 'Solve this step by step' },
-  reasoning: [
-    { content: 'Show your work at each step' }
-  ],
-  content: [{ content: mathProblem }]
-});
-
-const result = await executeChat(prompt, {
-  model: 'o1'  // Uses 'developer' role automatically
-});
-```
-
-## Official OpenAI Resources
-
-- **[OpenAI Platform](https://platform.openai.com/)** - Main platform and dashboard
-- **[API Documentation](https://platform.openai.com/docs/api-reference)** - Complete API reference
-- **[Models Documentation](https://platform.openai.com/docs/models)** - Model capabilities and pricing
-- **[Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)** - Best practices from OpenAI
-- **[Structured Outputs Guide](https://platform.openai.com/docs/guides/structured-outputs)** - JSON Schema format details
-- **[Rate Limits](https://platform.openai.com/docs/guides/rate-limits)** - Understanding rate limits
-- **[Usage Policies](https://openai.com/policies/usage-policies)** - Usage guidelines
-
-## Related Documentation
-
-- [Structured Outputs](structured-outputs) - Complete guide to schemas
-- [Anthropic Provider](provider-anthropic) - Claude integration
-- [Gemini Provider](provider-gemini) - Google Gemini integration
-- [Recipes System](recipes) - Advanced prompt creation
-- [CLI Execute Command](cli-execute) - Execute from command line
-
+- [Builder API](builder.md) - Programmatic prompt creation
+- [Core Concepts](core-concepts.md) - Understanding prompts, sections, and items
+- [Override System](override.md) - Hierarchical customization
+- [Anthropic Provider](provider-anthropic.md) - Using with Claude models
+- [Gemini Provider](provider-gemini.md) - Using with Google Gemini models

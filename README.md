@@ -38,7 +38,7 @@ Part of [Kjerneverk](https://kjerneverk.github.io) - structured formats for work
 ## Installation
 
 ```bash
-npm install @riotprompt/riotprompt
+npm install @kjerneverk/riotprompt
 ```
 
 ## MCP Server
@@ -50,7 +50,7 @@ RiotPrompt includes a Model Context Protocol (MCP) server that allows AI assista
   "mcpServers": {
     "riotprompt": {
       "command": "npx",
-      "args": ["-y", "@riotprompt/riotprompt", "riotprompt-mcp"]
+      "args": ["-y", "@kjerneverk/riotprompt", "riotprompt-mcp"]
     }
   }
 }
@@ -153,40 +153,32 @@ outputDir: "./output"
 
 ## Library Usage
 
-You can also use RiotPrompt programmatically in your application.
+You can also use RiotPrompt programmatically in your application using the Builder API.
 
 ```typescript
-import { cook, registerTemplates } from 'riotprompt';
+import { Builder, Formatter, Execution } from '@kjerneverk/riotprompt';
 
-// Advanced prompt creation
-import { z } from "zod";
+// Build a prompt from files and inline content
+const prompt = await Builder.create({ basePath: __dirname })
+  .addPersona('You are a helpful AI assistant')
+  .addInstruction('Provide clear and concise answers')
+  .addContent('What is machine learning?')
+  .build();
 
-const prompt = await cook({
-  basePath: __dirname,
-  persona: { content: 'You are a helpful AI assistant' },
-  // ...
-  // Structured Output with Zod
-  schema: z.object({
-      summary: z.string(),
-      tags: z.array(z.string()),
-      confidence: z.number().min(0).max(1)
-  })
+// Format for a specific model
+const formatter = Formatter.create();
+const request = formatter.formatPrompt('gpt-4o', prompt);
+
+// Execute against a provider
+const result = await Execution.execute(request, {
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Register and use templates
-registerTemplates({
-  'analysis': {
-    persona: { content: 'You are an expert analyst' },
-    instructions: [{ content: 'Provide detailed analysis' }],
-  },
-});
-
-const analysisPrompt = await cook({
-  basePath: __dirname,
-  template: 'analysis',
-  content: [{ content: dataToAnalyze, title: 'Data' }],
-});
+console.log(result.content);
 ```
+
+For agentic workflows (conversation management, tool use, iteration
+strategies, reflection), use the companion [`@kjerneverk/agentic`](https://github.com/kjerneverk/agentic) package.
 
 ## Documentation
 
@@ -194,9 +186,9 @@ Full documentation is available at [https://kjerneverk.github.io/riotprompt/](ht
 
 You can also explore the guides in the source:
 - [Core Concepts](docs/public/core-concepts.md)
-- [Recipes System](docs/public/recipes.md)
+- [Builder API](docs/public/builder.md)
 - [API Reference](docs/public/api-reference.md)
-- [Template Configuration](docs/public/template-configuration.md)
+- [Override System](docs/public/override.md)
 
 ## Philosophy
 
@@ -204,11 +196,12 @@ RiotPrompt is designed to be completely generic and unopinionated. Unlike other 
 
 ## Architecture
 
-- **Cook Function**: Core prompt creation engine
-- **Template System**: Reusable configuration patterns
+- **Builder API**: Fluent builder for constructing prompts from files, directories, and inline content
+- **Prompt Model**: Structured type hierarchy (Prompt → Section → Content/Context/Instruction/Trait/Weighted)
+- **Formatter**: Model-aware formatting (system role mapping, structured outputs, tool-use conversion)
 - **Content Processing**: Flexible content handling (files, directories, inline)
-- **Override System**: Hierarchical customization
-- **Type Safety**: Full TypeScript support throughout
+- **Override System**: Hierarchical customization for prompts
+- **Type Safety**: Full TypeScript support with Zod validation throughout
 
 ## Contributing
 
